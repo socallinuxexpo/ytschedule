@@ -1,0 +1,82 @@
+#!/usr/bin/python
+
+import datetime
+import pytz
+import iso8601
+from xml.etree.ElementTree import Element, SubElement, dump, parse, tostring, fromstring
+import os, sys
+import django
+from daemon import Daemon
+
+rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
+
+path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+sys.path.append(path)
+os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings"
+
+from room.models import *
+
+TIME_ZONE ='America/Los_Angeles'
+
+tz = pytz.timezone(TIME_ZONE)
+
+if __name__ == "__main__":
+  django.setup()
+
+  base_url = "http://www.socallinuxexpo.org"
+  root = parse('sign.xml').getroot()
+
+  rooms = {}
+
+  for node in root:
+    start = fromstring(node.findtext("Time")).findall("span")[0].get("content")
+    end = fromstring(node.findtext("Time")).findall("span")[1].get("content")
+    start_time = iso8601.parse_date(start)
+    end_time = iso8601.parse_date(end)
+    room = node.findtext("Room")
+    comp = "%s %s"%(room,start_time.strftime('%A %b. %d - SCaLE 14x'))
+  
+    q = Room.objects.filter(name=comp)
+    if len(q) == 0:
+      #print "not found"
+      room_obj = Room(name=comp, title="", start_time=start_time, end_time=end_time)
+      room_obj.save()
+    else:
+      #print "found"
+      room_obj = q[0]
+    #print room.start_time.astimezone(tz)
+    # Handle room
+    if comp in rooms.keys():
+      if rooms[comp]["start"] > start_time:
+        rooms[comp]["start"] = start_time
+      if rooms[comp]["end"] < end_time:
+        rooms[comp]["end"] = end_time
+    else:
+      rooms[comp] = {"start": start_time, "end": end_time}
+    title = node.findtext("Title")
+    speaker = node.findtext("Speakers")
+    url = "%s%s" %(base_url, node.findtext("Path"))
+    description = "Talk by %s\n<br/>%s\n<br/> More info at: <a href=\"%s\">%s</a>" %(speaker, node.findtext("Short-abstract"), url, url)
+    q = Talk.objects.filter(title=title)
+    if len(q) == 0:
+      talk = Talk(room_id=room_obj.id, name=title, title=title, start_time=start_time, end_time=end_time)
+    else:
+      talk = q[0]
+    talk.start_time = start_time
+    talk.end_time = end_time
+    talk.description = description
+    talk.talk_url = url
+    talk.speaker_name = node.findtext("Speakers")
+    talk.save()
+    
+  
+
+
+  for room in rooms:
+    #add room
+    print "%s: %s <--> %s" %(room, rooms[room]["start"], rooms[room]["end"])
+    room_obj = Room.objects.filter(name=room)[0]
+    print room_obj 
+    room_obj.start_time=rooms[room]["start"]
+    room_obj.end_time=rooms[room]["end"]
+    room_obj.save()
