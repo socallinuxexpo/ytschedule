@@ -31,10 +31,10 @@ class YtSchedule(Daemon):
                         filename=os.path.join(rundir, "testdaemon.log"), 
                         level=logging.DEBUG)
     while True:
-      #logging.debug("Debug message")
-      #logging.info("Info message")
-      #logging.warn("Warning message")
-      #logging.error("Error message (%s)" % datetime.datetime.now())
+      logging.debug("Debug message")
+      logging.info("Info message")
+      logging.warn("Warning message")
+      logging.error("Error message (%s)" % datetime.datetime.now())
       
       now = datetime.datetime.now(tz)
       query = Room.objects.filter(start_time__lte=now)

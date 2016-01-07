@@ -172,5 +172,11 @@ class Talk(models.Model):
     if self.start_time >= self.end_time:
       raise ValidationError(_('Must Start before End and have length.'))
 
-
+class CommonDescription(models.Model):
+  link_type = models.CharField(max_length=64, choices=(('room', 'Room'), ('talk', 'Talk')), blank=False)
+  link_subtype = models.CharField(max_length=64, choices=(('beginning', 'Beginning'), ('end', 'End')), blank=False)
+  description = models.TextField(max_length=1024)
+  
+  def __str__(self):
+    return self.link_type + "_" + self.link_subtype
 # Create your models here.

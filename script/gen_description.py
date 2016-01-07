@@ -33,7 +33,7 @@ if __name__ == "__main__":
       diff=(talk.start_time-room.start_time).seconds
       diff += 300
 
-      link="#"
+      link="#t="
       hours = diff/3600
       if hours > 0:
         link+="%ih" % hours
