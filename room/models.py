@@ -133,16 +133,6 @@ class Room(models.Model):
     self.state = status['status']['streamStatus']
     self.save()
     
-    data = dict(
-      A = 'a',
-      B = dict(
-        C = 'c',
-        D = 'd',
-        E = 'e',
-      )
-    )
-    with open('data.yml', 'w') as outfile:
-      outfile.write( yaml.dump(data, default_flow_style=True) )
   
   @transition(field=state, source='ready', target='active')
   def stream(self):
