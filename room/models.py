@@ -4,6 +4,7 @@ import datetime
 import httplib2
 import subprocess
 import yaml
+import pytz
 from django_fsm import FSMField, transition
 from django.core.exceptions import ValidationError
 
@@ -43,6 +44,11 @@ class YouTube(object):
 
     return build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
       http=credentials.authorize(httplib2.Http()))
+  @staticmethod
+  def lt(datetime):
+    #return pytz.timezone('America/Los_Angeles').localize(datetime)
+    return datetime.astimezone(pytz.timezone('America/Los_Angeles') )
+
 
 class Room(models.Model):
   states = (('error', 'Error'), ('planned', 'Planned'), ('created', 'Created'), ('ready', 'Ready'), ('inactive', 'Inactive'), ('active', 'Active'))
