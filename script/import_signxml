@@ -39,7 +39,7 @@ if __name__ == "__main__":
     q = Room.objects.filter(name=comp)
     if len(q) == 0:
       #print "not found"
-      room_obj = Room(name=comp, title="", start_time=start_time, end_time=end_time)
+      room_obj = Room(name=comp, start_time=start_time, end_time=end_time)
       room_obj.save()
     else:
       #print "found"
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     title = node.findtext("Title")
     speaker = node.findtext("Speakers")
     url = "%s%s" %(base_url, node.findtext("Path"))
-    description = "Talk by %s\n<br/>%s\n<br/> More info at: <a href=\"%s\">%s</a>" %(speaker, node.findtext("Short-abstract"), url, url)
+    description = "Talk by %s\n\n%s\nMore info at: %s\n" %(speaker, django.utils.html.strip_tags(node.findtext("Short-abstract")), url)
     q = Talk.objects.filter(title=title)
     if len(q) == 0:
       talk = Talk(room_id=room_obj.id, name=title, title=title, start_time=start_time, end_time=end_time)

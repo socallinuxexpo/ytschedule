@@ -15,8 +15,6 @@ from oauth2client.file import Storage
 from oauth2client.tools import argparser, run_flow
 
 
-#{u'status': {u'streamStatus': u'ready'}, u'kind': u'youtube#liveStream', u'cdn': {u'ingestionType': u'rtmp', u'ingestionInfo': {u'ingestionAddress': u'rtmp://a.rtmp.youtube.com/live2', u'streamName': u'mproctor13.vsg0-jkj1-u1wd-ezu8', u'backupIngestionAddress': u'rtmp://b.rtmp.youtube.com/live2?backup=1'}, u'format': u'1080p'}, u'snippet': {u'channelId': u'UCG7ZLjldwOhB9gc8w78DtfQ', u'description': u'', u'publishedAt': u'2015-08-17T09:33:34.000Z', u'title': u'TestStream1'}, u'etag': u'"dc9DtKVuP_z_ZIF9BZmHcN8kvWQ/QBcAWBG7gKDWZozSDmO1ITLEzeI"', u'id': u'G7ZLjldwOhB9gc8w78DtfQ1439804014774006'}
-
 logger = logging.getLogger(__name__)
 CLIENT_SECRETS_FILE = "client_secrets.json"
 
@@ -48,29 +46,36 @@ class YouTube(object):
   def lt(datetime):
     #return pytz.timezone('America/Los_Angeles').localize(datetime)
     return datetime.astimezone(pytz.timezone('America/Los_Angeles') )
-
+   #Bind the broadcast to the video stream. By doing so, you link the video that
+   # you will transmit to YouTube to the broadcast that the video is for.
+  def bind_broadcast(broadcast_id, stream_id):
+    bind_broadcast_response = self.get_authenticated_service().liveBroadcasts().bind(
+      part="id,contentDetails",
+      id=broadcast_id,
+      streamId=stream_id
+    ).execute()
 
 class Room(models.Model):
-  states = (('error', 'Error'), ('planned', 'Planned'), ('created', 'Created'), ('ready', 'Ready'), ('inactive', 'Inactive'), ('active', 'Active'))
+  states = (('error', 'Error'), ('planned', 'Planned'), ('stream_created', 'Stream Created'), ('published', 'Published'), ('ready', 'Ready'), ('inactive', 'Inactive'), ('active', 'Active'))
   transitions = [
       { 'trigger': 'publish', 'source': 'planned', 'dest': 'ready', 'before': 'check_stream', 'after': 'after_state' }
   ]
   formats = (("1080p", "1080p"), ("1080p_hfr", "1080p_hfr"), ("720p", "720p"), ("720_hfr", "720p_hfr"), ("480p", "480p"), ("360p", "360p"), ("240p", "240p") )
   
   name = models.CharField(max_length=64)
-  title= models.CharField(max_length=200)
-  description = models.TextField(max_length=1024)
+  description = models.TextField(max_length=5000, blank=True)
   start_time =  models.DateTimeField('start time')
   end_time = models.DateTimeField('end time')
-  #state = models.CharField(max_length=64, choices=states, default='planned')
   state = FSMField(default='planned')
   pub_date = models.DateTimeField('date published', default=datetime.datetime.now(), blank=True)
 
-  ytid = models.CharField(max_length=64, default="", blank=True)
+  broadcast_id = models.CharField(max_length=64, default="", blank=True)
+  youtube_id = models.CharField(max_length=64, default="", blank=True)
   cdn_format = models.CharField(max_length=15, choices=formats, default="1080p")
   stream_name = models.CharField(max_length=45, default="", blank=True)
   ingestion_address = models.CharField(max_length=128, default="", blank=True)
   backup_address = models.CharField(max_length=128, default="", blank=True)
+  is_streaming = models.BooleanField(default=False)
 
   def __init__(self, *args, **kwargs):
     models.Model.__init__(self, *args, **kwargs)
@@ -82,22 +87,63 @@ class Room(models.Model):
       raise ValidationError(('Must Start before End and have length.'))
 
   def can_publish(instance):
+    if instance.state == "stream_created":
+      return True
+    else:
+      return False
+
+  @transition(field=state, source='stream_created', target='published', conditions=[can_publish])
+  def publish(self):
+    logger.debug("Creating Live Broadcast for Room %s" % self.name)
+    try:
+      youtube = YouTube.get_authenticated_service()
+      insert_broadcast_response = youtube.liveBroadcasts().insert(
+        part="snippet,status",
+        body=dict(
+          snippet=dict(
+            title=self.name,
+            scheduledStartTime=self.start_time.isoformat(),
+            scheduledEndTime=self.end_time.isoformat(),
+            description=self.description,
+          ),
+          status=dict(
+            privacyStatus='private'
+          )
+        )
+      ).execute()
+
+      snippet = insert_broadcast_response["snippet"]
+
+      logger.debug("Broadcast '%s' with title '%s' was published at '%s'." % (
+         insert_broadcast_response["id"], snippet["title"], snippet["publishedAt"]) )
+
+      logger.info(insert_broadcast_response)
+      self.broadcast_id = insert_broadcast_response["id"]
+      self.pub_date = snippet["publishedAt"]
+
+      self.state = 'published'
+      self.save()
+    except HttpError, e:
+      print "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content)
+      self.state = 'error'
+      self.save()
+
+  def can_create(instance):
     if instance.state == "planned":
       return True
     else:
       return False
 
-  @transition(field=state, source='planned', target='created', conditions=[can_publish])
-  def publish_stream(self):
-    logger.debug("Creating stream for %s" % self.title)
+  @transition(field=state, source='planned', target='stream_created', conditions=[can_create])
+  def create_stream(self):
+    logger.debug("Creating stream for %s" % self.name)
     try:
       youtube = YouTube.get_authenticated_service()
       insert_stream_response = youtube.liveStreams().insert(
         part="snippet,cdn",
           body=dict(
             snippet=dict(
-              title=self.title,
-              description=self.description
+              title=self.name
           ),
           cdn=dict(
             format=self.cdn_format,
@@ -106,7 +152,7 @@ class Room(models.Model):
        )
       ).execute()
       
-      self.ytid = insert_stream_response['id']
+      self.youtube_id = insert_stream_response['id']
       self.stream_name = insert_stream_response['cdn']['ingestionInfo']['streamName']
       self.ingestion_address = insert_stream_response['cdn']['ingestionInfo']['ingestionAddress']
       self.backup_address = insert_stream_response['cdn']['ingestionInfo']['backupIngestionAddress']
@@ -114,7 +160,7 @@ class Room(models.Model):
       logger.debug("Stream '%s' with title '%s' was created." % (
         insert_stream_response["id"], insert_stream_response['snippet']["title"]))
       print insert_stream_response
-      self.state = 'created'
+      self.state = 'stream_created'
       self.save()
     except HttpError, e:
       print "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content)
@@ -129,10 +175,11 @@ class Room(models.Model):
       id=self.ytid
     ).execute()
     return result['items'][0]
+
   def check_state(self):
     return self.check_stream()['status']['streamStatus']
   
-  @transition(field=state, source='created', target='ready')
+  @transition(field=state, source='published', target='ready')
   def is_ready(self):
     status = self.check_stream()
     print "Stream %s is %s"%(self.title, status['status']['streamStatus'])
@@ -145,10 +192,32 @@ class Room(models.Model):
     print "start stream"
     test = subprocess.call("exit 1", shell=True)
     print test
-  
-
   def __str__(self):
     return self.name
+
+  def update_description(self):
+    talks = Talk.objects.filter(room=self)
+    desc = "SCaLE is the largest community-run open-source and free software conference in North America. It is held annually in Los Angeles.\n"
+    for talk in talks:
+      diff=(talk.start_time-self.start_time).seconds
+      diff += 300
+
+      link="#t="
+      hours = diff/3600
+      if hours > 0:
+        link+="%ih" % hours
+      minutes=diff%3600/60
+      if minutes > 0:
+        link+="%im" % minutes
+      seconds = (diff%3600)%60
+      if seconds > 0:
+        link += "%is" % seconds
+      desc += "%s to %s: %s: %s \n" % (YouTube.lt(talk.start_time).strftime('%I:%M %p'), 
+                                                       YouTube.lt(talk.end_time).strftime('%I:%M %p %Z'), 
+                                                       talk.title, talk.talk_url)
+    desc += "Southern Californa Linux Expo: https://www.socallinuxexpo.org/scale/14x\n"
+    self.description = desc
+    self.save()
 
 class Talk(models.Model):
   states = (('revoked', 'Revoked'), ('reclaimed', 'Reclaimed'), ('abandoned', 'Abandoned'), ('created', 'Created'), ('ready','Ready'), ('testStarting', 'TestStarting'), ('testing', 'Testing'), ('liveStarting', 'LiveStarting'), ('live', 'Live'), ('complete', 'Complete'))
@@ -163,6 +232,7 @@ class Talk(models.Model):
   start_time =  models.DateTimeField('start time')
   end_time = models.DateTimeField('end time')
   pub_date = models.DateTimeField('date published', default=datetime.datetime.now(), blank=True)
+  broadcast_id = models.CharField(max_length=64, default="", blank=True)
   
   def __str__(self):
     return self.name
@@ -171,7 +241,45 @@ class Talk(models.Model):
     # start before end
     if self.start_time >= self.end_time:
       raise ValidationError(_('Must Start before End and have length.'))
+  
+  def publish(self):
+    logger.debug("Creating Live Broadcast for Talk %s" % self.name)
+    try:
+      youtube = YouTube.get_authenticated_service()
+      insert_broadcast_response = youtube.liveBroadcasts().insert(
+        part="snippet,status",
+        body=dict(
+          snippet=dict(
+            title=self.title,
+            scheduledStartTime=self.start_time.isoformat(),
+            scheduledEndTime=self.end_time.isoformat(),
+            description=self.description,
+          ),
+          status=dict(
+            privacyStatus='private'
+          )
+        )
+      ).execute()
 
+      snippet = insert_broadcast_response["snippet"]
+
+      logger.debug("Talk Broadcast '%s' with title '%s' was published at '%s'." % (
+         insert_broadcast_response["id"], snippet["title"], snippet["publishedAt"]) )
+
+      logger.info(insert_broadcast_response)
+      self.broadcast_id = insert_broadcast_response["id"]
+      self.pub_date = snippet["publishedAt"]
+
+      self.save()
+    except HttpError, e:
+      print "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content)
+      self.save()
+
+  def can_create(instance):
+    if instance.state == "planned":
+      return True
+    else:
+      return False
 class CommonDescription(models.Model):
   link_type = models.CharField(max_length=64, choices=(('room', 'Room'), ('talk', 'Talk')), blank=False)
   link_subtype = models.CharField(max_length=64, choices=(('beginning', 'Beginning'), ('end', 'End')), blank=False)
@@ -179,4 +287,8 @@ class CommonDescription(models.Model):
   
   def __str__(self):
     return self.link_type + "_" + self.link_subtype
+
 # Create your models here.
+
+
+
