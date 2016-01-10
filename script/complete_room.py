@@ -23,6 +23,7 @@ time.tzset()
 os.environ['TZ'] = 'America/Los_Angeles'
 if __name__ == "__main__":
   django.setup()
+
   logger = logging.getLogger()
   logger.setLevel(logging.DEBUG)
 
@@ -31,19 +32,18 @@ if __name__ == "__main__":
   formatter = logging.Formatter('%(levelname)s - %(message)s')
   ch.setFormatter(formatter)
   logger.addHandler(ch)
-  
+
   if len(sys.argv) > 1:
     room = Room.objects.get(id=sys.argv[1])
   else:
     room = Room.objects.first()
-  print room.title
-  print room.state
   
-  room.update_description()
-  room.create_stream()
-  room.publish()
+  logger.info(room.title)
+  logger.info(room.state)
 
-  talks = Talk.objects.filter(room=room)
-  for talk in talks:
-    talk.publish()
+  print "Stream State=[%s]" % room.check_state()
+ 
+  print YouTube.broadcast_status(room.broadcast_id)
+  
+  print room.set_complete()
 

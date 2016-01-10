@@ -23,8 +23,17 @@ time.tzset()
 os.environ['TZ'] = 'America/Los_Angeles'
 if __name__ == "__main__":
   django.setup()
+  logger = logging.getLogger()
+  logger.setLevel(logging.DEBUG)
+
+  ch = logging.StreamHandler(sys.stdout)
+  ch.setLevel(logging.DEBUG)
+  formatter = logging.Formatter('%(levelname)s - %(message)s')
+  ch.setFormatter(formatter)
+  logger.addHandler(ch)
+
   for room in Room.objects.all():
-    print room.name
+    print room.title
     print YouTube.lt(room.start_time)
     talks = Talk.objects.filter(room=room).filter(start_time__gte=room.start_time).filter(end_time__lte=room.end_time)
     desc = "<p><a href=\"https://www.socallinuxexpo.org/scale/14x\">SCaLE 14X</a> - the 14th annual <a href=\"https://www.socallinuxexpo.org/\">Southern California Linux Expo</a> - the first-of-the-year Linux/Open Source software expo in North America, SCaLE 14X expects to host 150 exhibitors this year, along with nearly 130 sessions, tutorials and special events</p><p>SCaLE is the largest community-run open-source and free software conference in North America. It is held annually in Los Angeles.</p>\n"
@@ -46,7 +55,7 @@ if __name__ == "__main__":
       desc += "<a href=\"%s\">%s</a> to %s: <a href=\"%s\">%s</a><br/>\n" % (link, YouTube.lt(talk.start_time).strftime('%I:%M %p'), 
                                                        YouTube.lt(talk.end_time).strftime('%I:%M %p %Z'), 
                                                        talk.talk_url, talk.title)
-    if room.name != "Ballroom A Saturday Jan. 23 - SCaLE 14x":
+    if room.title != "Ballroom A Saturday Jan. 23 - SCaLE 14x":
       print desc
     exit
   #print len(Talk.objects.all())

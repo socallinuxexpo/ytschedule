@@ -5,6 +5,7 @@ Unit test/basic Daemon-Python implementation
 import sys, os
 import time, pytz
 import logging
+from logstash_formatter import LogstashFormatterV1
 import datetime
 import django
 from daemon import Daemon
@@ -17,7 +18,7 @@ os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings"
 
 from room.models import Room, Talk
 
-TIME_ZONE ='America/Chicago'
+TIME_ZONE ='America/Los_Angeles'
 
 tz = pytz.timezone(TIME_ZONE)
 
@@ -27,9 +28,18 @@ class YtSchedule(Daemon):
     django.setup()
 
   def run(self): #Define what tasks/processes to daemonize
+    '''
     logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', 
                         filename=os.path.join(rundir, "testdaemon.log"), 
                         level=logging.DEBUG)
+    '''
+    logger = logging.getLogger()
+    handler = logging.StreamHandler()
+    formatter = LogstashFormatterV1()
+
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
     while True:
       logging.debug("Debug message")
       logging.info("Info message")

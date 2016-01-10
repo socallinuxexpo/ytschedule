@@ -23,6 +23,15 @@ tz = pytz.timezone(TIME_ZONE)
 if __name__ == "__main__":
   django.setup()
 
+  logger = logging.getLogger()
+  logger.setLevel(logging.DEBUG)
+
+  ch = logging.StreamHandler(sys.stdout)
+  ch.setLevel(logging.DEBUG)
+  formatter = logging.Formatter('%(levelname)s - %(message)s')
+  ch.setFormatter(formatter)
+  logger.addHandler(ch)
+  
   base_url = "http://www.socallinuxexpo.org"
   root = parse('sign.xml').getroot()
 
@@ -33,13 +42,13 @@ if __name__ == "__main__":
     end = fromstring(node.findtext("Time")).findall("span")[1].get("content")
     start_time = iso8601.parse_date(start)
     end_time = iso8601.parse_date(end)
-    room = node.findtext("Room")
+    roomname = node.findtext("Room")
     comp = "%s %s"%(room,start_time.strftime('%A %b. %d - SCaLE 14x'))
   
-    q = Room.objects.filter(name=comp)
+    q = Room.objects.filter(title=comp)
     if len(q) == 0:
       #print "not found"
-      room_obj = Room(name=comp, start_time=start_time, end_time=end_time)
+      room_obj = Room(name=roomname, title=comp, start_time=start_time, end_time=end_time)
       room_obj.save()
     else:
       #print "found"
@@ -59,7 +68,7 @@ if __name__ == "__main__":
     description = "Talk by %s\n\n%s\nMore info at: %s\n" %(speaker, django.utils.html.strip_tags(node.findtext("Short-abstract")), url)
     q = Talk.objects.filter(title=title)
     if len(q) == 0:
-      talk = Talk(room_id=room_obj.id, name=title, title=title, start_time=start_time, end_time=end_time)
+      talk = Talk(room_id=room_obj.id, title=title, start_time=start_time, end_time=end_time)
     else:
       talk = q[0]
     talk.start_time = start_time
@@ -75,7 +84,7 @@ if __name__ == "__main__":
   for room in rooms:
     #add room
     print "%s: %s <--> %s" %(room, rooms[room]["start"], rooms[room]["end"])
-    room_obj = Room.objects.filter(name=room)[0]
+    room_obj = Room.objects.filter(title=room)[0]
     print room_obj 
     room_obj.start_time=rooms[room]["start"]
     room_obj.end_time=rooms[room]["end"]
