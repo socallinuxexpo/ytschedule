@@ -24,20 +24,20 @@ CLIENT_SECRETS_FILE = "client_secrets.json"
 YOUTUBE_READ_WRITE_SCOPE = "https://www.googleapis.com/auth/youtube"
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
-MISSING_CLIENT_SECRETS_MESSAGE=""
+MISSING_CLIENT_SECRETS_MESSAGE="missing client secret file."
 
 class YouTube(object):
   @staticmethod
-  def get_authenticated_service():
-    args = {'auth_host_name':'localhost', 'auth_host_port':[8080, 8090], 'logging_level':'ERROR', 'noauth_local_webserver':False}
+  def get_authenticated_service(init=False):
     flow = flow_from_clientsecrets(CLIENT_SECRETS_FILE,
       scope=YOUTUBE_READ_WRITE_SCOPE,
       message=MISSING_CLIENT_SECRETS_MESSAGE)
 
-    storage = Storage("yt_api_oauth2.json")
+    storage = Storage("user_oauth2.json")
     credentials = storage.get()
-#    if credentials is None or credentials.invalid:
-#      credentials = run_flow(flow, storage, args)
+    if init and (credentials is None or credentials.invalid):
+      args = argparser.parse_args(["--noauth_local_webserver"])
+      credentials = run_flow(flow, storage, args)
 
     return build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
       http=credentials.authorize(httplib2.Http()))
@@ -70,6 +70,15 @@ class YouTube(object):
     ).execute()
     return status_response
 
+  @staticmethod
+  def list_broadcast(status):
+    # Status Must be active, all, completed, or upcoming
+    response = YouTube.get_authenticated_service().liveBroadcasts().list(
+        part="id,status",
+        broadcastStatus=status,
+        maxResults=50
+      ).execute()
+    return response
   @staticmethod
   def set_default_video_info(broadcast):
     youtube = YouTube.get_authenticated_service()
