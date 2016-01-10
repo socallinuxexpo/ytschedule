@@ -17,8 +17,6 @@ from oauth2client.tools import argparser, run_flow
 
 
 logger = logging.getLogger(__name__)
-CLIENT_SECRETS_FILE = "client_secrets.json"
-
 # This OAuth 2.0 access scope allows for read-only access to the authenticated
 # user's account, but not other types of account access.
 YOUTUBE_READ_WRITE_SCOPE = "https://www.googleapis.com/auth/youtube"
@@ -29,7 +27,7 @@ MISSING_CLIENT_SECRETS_MESSAGE="missing client secret file."
 class YouTube(object):
   @staticmethod
   def get_authenticated_service(init=False):
-    flow = flow_from_clientsecrets(CLIENT_SECRETS_FILE,
+    flow = flow_from_clientsecrets("application_secrets.json",
       scope=YOUTUBE_READ_WRITE_SCOPE,
       message=MISSING_CLIENT_SECRETS_MESSAGE)
 
