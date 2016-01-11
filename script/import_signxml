@@ -43,7 +43,7 @@ if __name__ == "__main__":
     start_time = iso8601.parse_date(start)
     end_time = iso8601.parse_date(end)
     roomname = node.findtext("Room")
-    comp = "%s %s"%(room,start_time.strftime('%A %b. %d - SCaLE 14x'))
+    comp = "%s %s"%(roomname,start_time.strftime('%A %b. %d - SCaLE 14x'))
   
     q = Room.objects.filter(title=comp)
     if len(q) == 0:
