@@ -6,6 +6,7 @@ import subprocess
 import yaml
 import pytz
 import pprint
+from wakeonlan import wol
 from django_fsm import FSMField, transition
 from django.core.exceptions import ValidationError
 
@@ -77,6 +78,27 @@ class YouTube(object):
         maxResults=50
       ).execute()
     return response
+  
+  @staticmethod
+  def check_host_up(hostname):
+    try:
+      from subprocess import DEVNULL # py3k
+    except ImportError:
+      import os
+      DEVNULL = open(os.devnull, 'wb')
+  
+    response = subprocess.call(["ping", "-c", "1", hostname], stdout=DEVNULL, stderr=subprocess.STDOUT)
+    if response == 0:
+      logger.info('%s is up!', hostname)
+    else:
+     logger.info('%s is down!', hostname)
+    return response
+  
+  @staticmethod
+  def wake_host_up(mac):
+    logger.info("Sending WOL to %s", mac)
+    wol.send_magic_packet(mac)
+  
   @staticmethod
   def set_default_video_info(broadcast):
     youtube = YouTube.get_authenticated_service()
@@ -126,10 +148,21 @@ class Room(models.Model):
   ingestion_address = models.CharField(max_length=128, default="", blank=True)
   backup_address = models.CharField(max_length=128, default="", blank=True)
   is_streaming = models.BooleanField(default=True)
+  hostname = models.CharField(max_length=128, default="", blank=True)
+  mac_address = models.CharField(max_length=64, default="", blank=True)
 
   def __init__(self, *args, **kwargs):
     models.Model.__init__(self, *args, **kwargs)
     logger.debug("Room init called")
+
+  def dnsname(self):
+    return self.name.lower().replace(" ", "-") 
+
+  def cam_name(self):
+    return "%s-cam.scaleav.us" % self.dnsname() 
+
+  def podium_name(self):
+    return "%s-podium.scaleav.us" % self.dnsname()
 
   def clean(self):
     # start before end
