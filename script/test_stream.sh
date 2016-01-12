@@ -1,6 +1,6 @@
 #!/bin/bash
-videobr=4096
-overlay="queue ! clockoverlay text=\"source: \" auto-resize=true font-desc=\"Sans, 46\" time-format=\"%H:%M:%S\" halignment=center valignment=center !"
+videobr=3072
+overlay="queue ! clockoverlay text=\"Generated at: \" auto-resize=true font-desc=\"Sans, 42\" time-format=\"%m/%d/%Y %H:%M:%S\" halignment=center valignment=center !"
 
 #  audio. ! mux. \
 gst-launch-1.0 -v \
