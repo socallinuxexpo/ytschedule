@@ -126,6 +126,40 @@ class YouTube(object):
               body=video
             ).execute()
 
+  @staticmethod
+  def list_streams(search_by={}):
+    youtube = YouTube.get_authenticated_service()
+    search = {
+        'part': "id,snippet,cdn,status",
+        'mine': True,
+        'maxResults': 50
+    }
+    if search_by != {}:
+      search.update(search_by)
+    list_streams_request = youtube.liveStreams().list( **search )
+    streams = []
+    while list_streams_request:
+      list_streams_response = list_streams_request.execute()
+
+      for stream in list_streams_response.get("items", []):
+        streams.append(stream)
+
+      list_streams_request = youtube.liveStreams().list_next(
+        list_streams_request, list_streams_response)
+    return streams
+  
+  @staticmethod
+  def find_stream_by_title(title):
+    streams = YouTube.list_streams()
+    count = 0
+    for stream in streams:
+      if stream['snippet']['title'] == title:
+        break
+      count += 1
+    if count < len(streams):
+      return stream
+    return None
+
 class Room(models.Model):
   states = (('error', 'Error'), ('planned', 'Planned'), ('stream_created', 'Stream Created'), ('published', 'Published'), ('testing', 'Testing'), ('live', 'Live'), ('complete', 'Complete'))
   transitions = [
@@ -218,39 +252,46 @@ class Room(models.Model):
       return True
     else:
       return False
-
+  
   @transition(field=state, source='planned', target='stream_created', conditions=[can_create])
-  def create_stream(self):
-    logger.debug("Creating stream for %s" % self.title)
-    try:
-      youtube = YouTube.get_authenticated_service()
-      insert_stream_response = youtube.liveStreams().insert(
-        part="snippet,cdn",
-          body=dict(
-            snippet=dict(
-              title=self.title
-          ),
-          cdn=dict(
-            format=self.cdn_format,
-            ingestionType="rtmp"
-          )
-       )
-      ).execute()
-      
-      self.youtube_id = insert_stream_response['id']
-      self.stream_name = insert_stream_response['cdn']['ingestionInfo']['streamName']
-      self.ingestion_address = insert_stream_response['cdn']['ingestionInfo']['ingestionAddress']
-      self.backup_address = insert_stream_response['cdn']['ingestionInfo']['backupIngestionAddress']
+  def set_stream(self, stream):
+    self.youtube_id = stream['id']
+    self.stream_name = stream['cdn']['ingestionInfo']['streamName']
+    self.ingestion_address = stream['cdn']['ingestionInfo']['ingestionAddress']
+    self.backup_address = stream['cdn']['ingestionInfo']['backupIngestionAddress']
 
-      logger.info("Stream '%s' with title '%s' was created." % (
-        insert_stream_response["id"], insert_stream_response['snippet']["title"]))
-      logger.debug(insert_stream_response)
-      self.state = 'stream_created'
-      self.save()
-    except HttpError, e:
-      logger.error( "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content) )
-      self.state = 'error'
-      self.save()
+    logger.info("Stream '%s' with title '%s' was created." % (
+        stream["id"], stream['snippet']["title"]))
+    logger.debug(stream)
+    self.state = 'stream_created'
+    self.save()
+  
+  @transition(field=state, source='planned', target='stream_created', conditions=[can_create])
+  def create_stream(self, check=True):
+    logger.debug("Creating stream for %s" % self.title)
+    if check:
+      stream = YouTube.find_stream_by_title("%s_%s" %(self.dnsname(), self.cdn_format))
+      if stream == None:
+        try:
+          youtube = YouTube.get_authenticated_service()
+          stream = youtube.liveStreams().insert(
+            part="snippet,cdn",
+              body=dict(
+                snippet=dict(
+                  title="%s_%s" %(self.dnsname(), self.cdn_format),
+                  description=self.title
+              ),
+              cdn=dict(
+                format=self.cdn_format,
+                ingestionType="rtmp"
+              )
+            )
+          ).execute()
+        except HttpError, e:
+          logger.error( "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content) )
+          self.state = 'error'
+          self.save()
+    self.set_stream(stream)  
   
   def check_stream(self):
     logger.debug( "Checking Stream Status Internal=%s"%self.state )
@@ -371,7 +412,7 @@ class Talk(models.Model):
       self.broadcast_id = insert_broadcast_response["id"]
       self.pub_date = snippet["publishedAt"]
       YouTube.set_default_video_info(self)
-      YouTube.bind_broadcast(self.broadcast_id, room.youtube_id)
+      YouTube.bind_broadcast(self.broadcast_id, self.room.youtube_id)
 
       self.save()
     except HttpError, e:
