@@ -24,7 +24,7 @@ if __name__ == "__main__":
   django.setup()
 
   logger = logging.getLogger()
-  logger.setLevel(logging.DEBUG)
+  logger.setLevel(logging.WARNING)
 
   ch = logging.StreamHandler(sys.stdout)
   ch.setLevel(logging.DEBUG)
@@ -32,9 +32,22 @@ if __name__ == "__main__":
   ch.setFormatter(formatter)
   logger.addHandler(ch)
   
-  base_url = "http://www.socallinuxexpo.org"
-  root = parse('sign.xml').getroot()
+  if len(sys.argv) > 1:
+    xml_filename = sys.argv[1]
+  else:
+    xml_filename = "example_data/sign.xml"
+  
+  if len(sys.argv) > 2:
+    base_url = sys.argv[2]
+  else:
+    base_url = "https://www.socallinuxexpo.org"
+  
+  if not os.path.isfile(xml_filename):
+    logger.error("File %s does not exist." % xml_filename)
+    exit(-1)
+  
 
+  root = parse(xml_filename).getroot()
   rooms = {}
 
   for node in root:
