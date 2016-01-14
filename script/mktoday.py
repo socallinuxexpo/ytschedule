@@ -27,7 +27,8 @@ if __name__ == "__main__":
   DAY_LENGTH=2 #hours
   NUM_TALKS = 8
   START_IN = 20 # minutes
-  PUBLISH = True  
+  PUBLISH = True
+  room_name = "Room 107"
 
   logger = logging.getLogger()
   logger.setLevel(logging.DEBUG)
@@ -39,13 +40,13 @@ if __name__ == "__main__":
   logger.addHandler(ch)
   
   now = datetime.datetime.now(tz)
-  start_time = datetime.datetime(now.year, now.month, now.day, now.hour, now.minute+START_IN, 0, 0, tzinfo=tz)
+  start_time = datetime.datetime(now.year, now.month, now.day, now.hour, now.minute, 0, 0, tzinfo=tz)+datetime.timedelta(minutes=START_IN)
   #start_time = now + datetime.timedelta(0,60*START_IN)
   end_time = start_time + datetime.timedelta(0,60*60*DAY_LENGTH)
   
   print "Room Start=%s" % start_time
   print "Room End=  %s" % end_time
-  room = Room(title="Room_%s"%now.strftime("%m%d"), start_time=start_time, end_time=end_time)
+  room = Room(title="Room_%s"%now.strftime("%m%d"), name=room_name, start_time=start_time, end_time=end_time)
   room.save()
   
   talk_length = 60*60*DAY_LENGTH/8

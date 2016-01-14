@@ -306,9 +306,16 @@ class Room(models.Model):
   def check_state(self):
     return self.check_stream()['status']['streamStatus']
   
-  @transition(field=state, source='published', target='testing')
+  def stream_active(self):
+    status = self.check_stream()['status']['streamStatus']['status']
+    if status == "ok" or status == "good":
+      return True
+    else:
+      return False
+  
+  @transition(field=state, source='published', target='testing', conditions=[stream_active])
   def set_testing(self):
-    if self.check_stream() == "ready":
+    if self.stream_active():
       status_response = YouTube.set_broadcast_status(self.broadcast_id, 'testing')
       self.state = 'testing'
       self.save()
@@ -316,16 +323,16 @@ class Room(models.Model):
       logger.error("Stream [%s] is not ready!" % self.youtube_id)
     
   
-  @transition(field=state, source=['testing','published'], target='live')
+  @transition(field=state, source=['testing','published'], target='live', conditions=[stream_active])
   def set_live(self):
-    if self.check_stream() == "ready":
+    if self.stream_active():
       status_response = YouTube.set_broadcast_status(self.broadcast_id, 'live')
       self.state = 'live'
       self.save()
     else:
       logger.error("Stream [%s] is not ready!" % self.youtube_id)
   
-  @transition(field=state, source=['testing','live','published'], target='complete')
+  @transition(field=state, source=['testing','live','published','error'], target='complete')
   def set_complete(self):
     status_response = YouTube.set_broadcast_status(self.broadcast_id, 'complete')
     self.state = 'complete'
@@ -418,6 +425,20 @@ class Talk(models.Model):
     except HttpError, e:
       print "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content)
       self.save()
+  
+  def set_live(self):
+    if self.check_stream() == "ready":
+      status_response = YouTube.set_broadcast_status(self.broadcast_id, 'live')
+      self.state = 'live'
+      self.save()
+    else:
+      logger.error("Stream [%s] is not ready!" % self.youtube_id)
+  
+  @transition(field=state, source=['testing','live','published','error'], target='complete')
+  def set_complete(self):
+    status_response = YouTube.set_broadcast_status(self.broadcast_id, 'complete')
+    self.state = 'complete'
+    self.save()
 
   def can_create(instance):
     if instance.state == "planned":
