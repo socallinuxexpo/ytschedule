@@ -22,4 +22,9 @@ class Migration(migrations.Migration):
             name='mac_address',
             field=models.CharField(default=b'', max_length=64, blank=True),
         ),
+        migrations.AlterField(
+            model_name='talk',
+            name='state',
+            field=django_fsm.FSMField(default=b'created', max_length=50),
+        ),
     ]
