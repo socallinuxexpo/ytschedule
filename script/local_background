@@ -4,6 +4,7 @@ import sys, os, datetime, pytz
 from daemon import Daemon
 from utils.background import YtScheduleBG
 from django.db.models import Q
+import django_fsm
 
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
@@ -21,39 +22,49 @@ class LocalBackground(YtScheduleBG):
     query = query.filter(name=self.configuration['room_name'])
     if len(query) > 0:
       for result in query:
-        logging.debug("[%s]: %s -- %s %s"%(result.title, result.start_time, result.end_time, result.state))
-        minutes = (result.start_time-now).total_seconds()/60
-        if minutes < 20 and (result.state == "testing" or result.state == "published"):
-          logging.debug("ensure currently streaming")
-          #exec sudo service youtube_1080 stop
-          logging.debug("Set liveStream to Live.")
-          #result.set_live()
-        elif minutes < 60 and result.state == "published":
-          logging.debug("ensure currently streaming")
-          #exec sudo service youtube_1080 stop
-          logging.debug("Set liveStream to Testing.")
-          #result.set_testing()
-        elif (result.end_time-now).total_seconds()/60 < -20 and result.state == "live":
-          logging.debug("Set liveStream to Complete.")
-          #result.set_complete()
-        elif (result.end_time-now).total_seconds()/60 < -20 and result.state == "completed":
-          logging.debug("Stop youtube streamer.")
-          #exec sudo service youtube_1080 stop
-        
-        q = Talk.objects.filter(room=result)
-        q = q.filter(start_time__lte=now+datetime.timedelta(seconds=5*60))
-        q = q.filter(end_time__gte=now-datetime.timedelta(seconds=15*60))
-        if len(q) > 0:
-          for talk in q:
-            logging.debug( "[%s]: %s -- %s"%(talk.title, talk.start_time, talk.end_time) )
-            minutes = (talk.start_time-now).total_seconds()/60
-            if minutes < 5 and talk.state == "created"):
+        try:
+          logging.debug("[%s]: %s -- %s %s"%(result.title, result.start_time, result.end_time, result.state))
+          bcast_status = YouTube.broadcast_status(result.broadcast_id)
+          logging.debug("Current broadcast status [%s]" % bcast_status)
+          minutes = (result.start_time-now).total_seconds()/60
+          if minutes < 20 and result.state == "testing":
+            if bcast_status == "testing":
+              result.set_live()
               logging.debug("Set liveStream to Live.")
-              #result.set_live()
-            elif (talk.end_time-now).total_seconds()/60 < -10 and talk.state == "live"):
-              logging.debug("Set liveStream to Live.")
-              #result.set_complete()
-
+            else:
+              YouTube.runcmd("sudo service youtube_1080 start")
+          elif minutes < 60 and result.state == "published":
+            if bcast_status == "ready":
+              result.set_testing()
+              logging.debug("Set liveStream to Testing.")
+            else:
+              YouTube.runcmd("sudo service youtube_1080 start")
+          elif (result.end_time-now).total_seconds()/60 < -20 and result.state == "live":
+            logging.debug("Set liveStream to Complete.")
+            result.set_complete()
+          elif (result.end_time-now).total_seconds()/60 < -20 and result.state == "completed":
+            logging.debug("Stop youtube streamer.")
+            YouTube.runcmd("sudo service youtube_1080 stop")
+          
+          q = Talk.objects.filter(room=result)
+          q = q.filter(start_time__lte=now+datetime.timedelta(seconds=5*60))
+          q = q.filter(end_time__gte=now-datetime.timedelta(seconds=15*60))
+          if len(q) > 0:
+            for talk in q:
+              try:
+                logging.debug( "[%s]: %s -- %s"%(talk.title, talk.start_time, talk.end_time) )
+                if result.state == 'live':
+                  minutes = (talk.start_time-now).total_seconds()/60
+                  if minutes < 5 and talk.state == "created":
+                    logging.debug("Set liveStream to Live.")
+                    result.set_live()
+                  elif (talk.end_time-now).total_seconds()/60 < -10 and talk.state == "live":
+                    logging.debug("Set liveStream to Live.")
+                    result.set_complete()
+              except ( RuntimeError, django_fsm.TransitionNotAllowed ) as e:
+                logging.error("Promblem in talk loop: %s" % e)
+        except ( RuntimeError, django_fsm.TransitionNotAllowed ) as e:
+          logging.error("Promblem in room loop: %s" % e)
 
 if __name__ == "__main__":
   daemon = LocalBackground( os.path.join(rundir, "%s.pid" % os.path.basename(__file__)) )

@@ -159,6 +159,20 @@ class YouTube(object):
     if count < len(streams):
       return stream
     return None
+  @staticmethod
+  def runcmd(command):
+    retcode = 1
+    try:
+      logging.debug("Executing: [%s]"%command)
+      #retcode = call(command, shell=True)
+      if retcode < 0:
+        logging.error("Child was terminated by signal %i" % -retcode)
+      else:
+        logging.info("Child returned %i" % retcode)
+    except OSError as e:
+      logging.error("Execution failed: %s" % e)
+      return True
+    return False  
 
 class Room(models.Model):
   states = (('error', 'Error'), ('planned', 'Planned'), ('stream_created', 'Stream Created'), ('published', 'Published'), ('testing', 'Testing'), ('live', 'Live'), ('complete', 'Complete'))
@@ -307,8 +321,8 @@ class Room(models.Model):
     return self.check_stream()['status']['streamStatus']
   
   def stream_active(self):
-    status = self.check_stream()['status']['streamStatus']['status']
-    if status == "ok" or status == "good":
+    status = self.check_stream()['status']['healthStatus']['status']
+    if status == "good" or status == "ok":
       return True
     else:
       return False
@@ -377,7 +391,7 @@ class Talk(models.Model):
   talk_url = models.CharField(max_length=256, default="", blank=True)
   speaker_name = models.CharField(max_length=64, default="", blank=True)
   speaker_url = models.CharField(max_length=256, default="", blank=True)
-  state = models.CharField(max_length=64, choices=states, default='created')
+  state = FSMField(default='created')
   start_time =  models.DateTimeField('start time')
   end_time = models.DateTimeField('end time')
   pub_date = models.DateTimeField('date published', default=datetime.datetime.now(), blank=True)
@@ -426,25 +440,22 @@ class Talk(models.Model):
       print "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content)
       self.save()
   
+  @transition(field=state, source=['created'], target='live')
   def set_live(self):
-    if self.check_stream() == "ready":
+    print self.room.check_stream() 
+    if self.room.check_stream() == "ready":
       status_response = YouTube.set_broadcast_status(self.broadcast_id, 'live')
       self.state = 'live'
       self.save()
     else:
       logger.error("Stream [%s] is not ready!" % self.youtube_id)
   
-  @transition(field=state, source=['testing','live','published','error'], target='complete')
+  @transition(field=state, source=['live'], target='complete')
   def set_complete(self):
     status_response = YouTube.set_broadcast_status(self.broadcast_id, 'complete')
     self.state = 'complete'
     self.save()
 
-  def can_create(instance):
-    if instance.state == "planned":
-      return True
-    else:
-      return False
 class CommonDescription(models.Model):
   link_type = models.CharField(max_length=64, choices=(('room', 'Room'), ('talk', 'Talk')), blank=False)
   link_subtype = models.CharField(max_length=64, choices=(('beginning', 'Beginning'), ('end', 'End')), blank=False)
