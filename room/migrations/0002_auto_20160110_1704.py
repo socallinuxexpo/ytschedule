@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from django.db import models, migrations
 import datetime
+import django_fsm
 
 
 class Migration(migrations.Migration):

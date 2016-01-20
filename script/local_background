@@ -9,7 +9,6 @@ import django_fsm
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
 sys.path.append(path)
-os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings"
 
 from room.models import *
 
@@ -52,21 +51,25 @@ class LocalBackground(YtScheduleBG):
           if len(q) > 0:
             for talk in q:
               try:
-                logging.debug( "[%s]: %s -- %s"%(talk.title, talk.start_time, talk.end_time) )
+                logging.debug( "[%s]: %s -- %s [%s]"%(talk.title, talk.start_time, talk.end_time, result.state) )
                 if result.state == 'live':
                   minutes = (talk.start_time-now).total_seconds()/60
-                  if minutes < 5 and talk.state == "created":
+                  if minutes < 10 and talk.state == "published":
+                    logging.debug("Set liveStream to Testing.")
+                    talk.set_testing()
+                  elif minutes < 5 and talk.state == "testing":
                     logging.debug("Set liveStream to Live.")
-                    result.set_live()
+                    talk.set_live()
                   elif (talk.end_time-now).total_seconds()/60 < -10 and talk.state == "live":
                     logging.debug("Set liveStream to Live.")
-                    result.set_complete()
+                    talk.set_complete()
               except ( RuntimeError, django_fsm.TransitionNotAllowed ) as e:
                 logging.error("Promblem in talk loop: %s" % e)
         except ( RuntimeError, django_fsm.TransitionNotAllowed ) as e:
           logging.error("Promblem in room loop: %s" % e)
 
 if __name__ == "__main__":
+  os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ytschedule.settings")
   daemon = LocalBackground( os.path.join(rundir, "%s.pid" % os.path.basename(__file__)) )
   daemon.process_cmd(sys.argv)
 

@@ -12,7 +12,7 @@ rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
 
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 sys.path.append(path)
-os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings"
+os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings.production"
 
 
 TIME_ZONE ='America/Los_Angeles'

@@ -384,7 +384,7 @@ class Room(models.Model):
     self.save()
 
 class Talk(models.Model):
-  states = (('revoked', 'Revoked'), ('reclaimed', 'Reclaimed'), ('abandoned', 'Abandoned'), ('created', 'Created'), ('ready','Ready'), ('testStarting', 'TestStarting'), ('testing', 'Testing'), ('liveStarting', 'LiveStarting'), ('live', 'Live'), ('complete', 'Complete'))
+  states = (('created', 'Created'), ('published','Published'), ('testing', 'Testing'), ('live', 'Live'), ('complete', 'Complete'))
   room = models.ForeignKey(Room) 
   title= models.CharField(max_length=200)
   description = models.TextField(max_length=1024)
@@ -434,21 +434,29 @@ class Talk(models.Model):
       self.pub_date = snippet["publishedAt"]
       YouTube.set_default_video_info(self)
       YouTube.bind_broadcast(self.broadcast_id, self.room.youtube_id)
-
+      self.state = "published"
       self.save()
     except HttpError, e:
-      print "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content)
+      logger.error("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
       self.save()
   
-  @transition(field=state, source=['created'], target='live')
+  @transition(field=state, source=['published'], target='testing')
+  def set_testing(self):
+    if self.room.stream_active():
+      status_response = YouTube.set_broadcast_status(self.broadcast_id, 'testing')
+      self.state = 'testing'
+      self.save()
+    else:
+      logger.error("Stream [%s] is not ready!" % self.broadcast_id)
+  
+  @transition(field=state, source=['testing'], target='live')
   def set_live(self):
-    print self.room.check_stream() 
-    if self.room.check_stream() == "ready":
+    if self.room.stream_active():
       status_response = YouTube.set_broadcast_status(self.broadcast_id, 'live')
       self.state = 'live'
       self.save()
     else:
-      logger.error("Stream [%s] is not ready!" % self.youtube_id)
+      logger.error("Stream [%s] is not ready!" % self.broadcast_id)
   
   @transition(field=state, source=['live'], target='complete')
   def set_complete(self):
@@ -465,6 +473,4 @@ class CommonDescription(models.Model):
     return self.link_type + "_" + self.link_subtype
 
 # Create your models here.
-
-
 

@@ -13,7 +13,6 @@ rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
 
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 sys.path.append(path)
-os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings"
 
 from room.models import *
 
@@ -24,8 +23,8 @@ utc = pytz.timezone("UTC")
 if __name__ == "__main__":
   django.setup()
   
-  DAY_LENGTH=2 #hours
-  NUM_TALKS = 8
+  DAY_LENGTH=1 #hours
+  NUM_TALKS = 4
   START_IN = 20 # minutes
   PUBLISH = True
   room_name = "Room 107"

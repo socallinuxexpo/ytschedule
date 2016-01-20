@@ -12,7 +12,6 @@ rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
 
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 sys.path.append(path)
-os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings"
 
 
 TIME_ZONE ='America/Los_Angeles'
@@ -28,6 +27,8 @@ if __name__ == "__main__":
 
   ch = logging.StreamHandler(sys.stdout)
   ch.setLevel(logging.WARNING)
+  logger.setLevel(logging.WARNING)
+  logger.setLevel(logging.INFO)
   formatter = logging.Formatter('%(levelname)s - %(message)s')
   ch.setFormatter(formatter)
   logger.addHandler(ch)

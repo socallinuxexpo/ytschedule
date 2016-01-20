@@ -14,7 +14,7 @@ from daemon import Daemon
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../run'))
 sys.path.append(path)
-os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings"
+os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings.production"
 
 from room.models import Room, Talk
 
@@ -32,11 +32,7 @@ class YtScheduleBG(Daemon):
     django.setup()
 
   def run(self): #Define what tasks/processes to daemonize
-    '''
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', 
-                        filename=os.path.join(rundir, "testdaemon.log"), 
-                        level=logging.DEBUG)
-    '''
+    self.config()
     if self.is_daemon:
       logger = logging.getLogger()
       handler = logging.FileHandler(filename=os.path.join(rundir, "%s.log" % self.__class__.__name__), mode='a' )
@@ -52,7 +48,6 @@ class YtScheduleBG(Daemon):
       handler.setFormatter(formatter)
       logger.addHandler(handler)
       logger.setLevel(logging.DEBUG)
-    self.config()
     self.work_loop()
 
   def config(self):
