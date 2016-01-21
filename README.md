@@ -13,6 +13,7 @@ pip install logstash_formatter
 pip install pytz
 pip install iso8601
 pip install wakeonlan
+pip install mysqlclient
 
 install daemon from https://github.com/stackd/daemon-py/
 

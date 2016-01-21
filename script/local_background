@@ -69,7 +69,7 @@ class LocalBackground(YtScheduleBG):
           logging.error("Promblem in room loop: %s" % e)
 
 if __name__ == "__main__":
-  os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ytschedule.settings")
+  os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ytschedule.settings.production")
   daemon = LocalBackground( os.path.join(rundir, "%s.pid" % os.path.basename(__file__)) )
   daemon.process_cmd(sys.argv)
 

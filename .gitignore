@@ -3,4 +3,5 @@
 *.pyc 
 **/*.pyc
 run/*
+ytschedule/settings/production.py
 
