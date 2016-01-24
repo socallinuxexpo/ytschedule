@@ -52,7 +52,7 @@ class LocalBackground(YtScheduleBG):
             for talk in q:
               try:
                 logging.debug( "[%s]: %s -- %s [%s]"%(talk.title, talk.start_time, talk.end_time, result.state) )
-                if result.state == 'live':
+                if True:
                   minutes = (talk.start_time-now).total_seconds()/60
                   if minutes < 10 and talk.state == "published":
                     logging.debug("Set liveStream to Testing.")

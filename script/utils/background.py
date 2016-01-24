@@ -69,8 +69,8 @@ class YtScheduleBG(Daemon):
     while True:
       logging.debug("Debug message")
       logging.info("Info message")
-      logging.warn("Warning message")
-      logging.error("Error message (%s)" % datetime.datetime.now())
+      #logging.warn("Warning message")
+      #logging.error("Error message (%s)" % datetime.datetime.now())
       
       loop_start = datetime.datetime.now(self.tz)
       self.work()

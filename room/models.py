@@ -238,7 +238,47 @@ class Room(models.Model):
             description=self.description,
           ),
           status=dict(
-            privacyStatus='unlisted' #public, private, or unlisted
+            privacyStatus='public' #public, private, or unlisted
+          )
+        )
+      ).execute()
+
+      snippet = insert_broadcast_response["snippet"]
+
+      logger.info("Broadcast '%s' with title '%s' was published at '%s'." % (
+         insert_broadcast_response["id"], snippet["title"], snippet["publishedAt"]) )
+
+      logger.debug(insert_broadcast_response)
+      self.broadcast_id = insert_broadcast_response["id"]
+      self.pub_date = snippet["publishedAt"]
+
+      YouTube.set_default_video_info(self)
+      YouTube.bind_broadcast(self.broadcast_id, self.youtube_id)
+      self.state = 'published'
+      self.save()
+    except HttpError, e:
+      logger.error( "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
+      self.state = 'error'
+      self.save()
+
+  @transition(field=state, source=['live', 'error'], target='published')
+  def republish(self):
+    logger.debug("Creating Live Broadcast for Room %s" % self.title)
+    print datetime.datetime.now().isoformat()
+    print (datetime.datetime.now()+datetime.timedelta(0,60)).isoformat()
+    try:
+      youtube = YouTube.get_authenticated_service()
+      insert_broadcast_response = youtube.liveBroadcasts().insert(
+        part="snippet,status",
+        body=dict(
+          snippet=dict(
+            title=self.title,
+            scheduledStartTime=self.start_time.isoformat(),
+            scheduledEndTime=self.end_time.isoformat(),
+            description=self.description,
+          ),
+          status=dict(
+            privacyStatus='public' #public, private, or unlisted
           )
         )
       ).execute()
@@ -419,7 +459,7 @@ class Talk(models.Model):
             description=self.description,
           ),
           status=dict(
-            privacyStatus='unlisted'
+            privacyStatus='public'
           )
         )
       ).execute()
