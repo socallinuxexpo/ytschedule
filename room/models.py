@@ -396,7 +396,7 @@ class Room(models.Model):
     print "start stream"
     test = subprocess.call("exit 1", shell=True)
     print test
-  def __str__(self):
+  def __unicode__(self):
     return self.title
 
   def update_description(self):
@@ -437,7 +437,7 @@ class Talk(models.Model):
   pub_date = models.DateTimeField('date published', default=datetime.datetime.now(), blank=True)
   broadcast_id = models.CharField(max_length=64, default="", blank=True)
   
-  def __str__(self):
+  def __unicode__(self):
     return self.title
   
   def clean(self):
@@ -509,7 +509,7 @@ class CommonDescription(models.Model):
   link_subtype = models.CharField(max_length=64, choices=(('beginning', 'Beginning'), ('end', 'End')), blank=False)
   description = models.TextField(max_length=1024)
   
-  def __str__(self):
+  def __unicode__(self):
     return self.link_type + "_" + self.link_subtype
 
 # Create your models here.
