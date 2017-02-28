@@ -1,0 +1,13 @@
+---
+room_name: Room 107
+services:
+  - youtube_1080
+  - videosave
+  - video_mixer
+  - slides
+  - http-mjpeg
+  - mjpeg_encode
+  - chef-client
+  - xserver
+  - test_stream
+ 
