@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('title', models.CharField(max_length=128)),
-                ('name', models.CharField(max_length=64, blank=True)),
+                ('name', models.CharField(max_length=128, blank=True)),
                 ('description', models.TextField(max_length=5000, blank=True)),
                 ('start_time', models.DateTimeField(verbose_name=b'start time')),
                 ('end_time', models.DateTimeField(verbose_name=b'end time')),
@@ -48,7 +48,7 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=200)),
                 ('description', models.TextField(max_length=1024)),
                 ('talk_url', models.CharField(default=b'', max_length=256, blank=True)),
-                ('speaker_name', models.CharField(default=b'', max_length=64, blank=True)),
+                ('speaker_name', models.CharField(default=b'', max_length=128, blank=True)),
                 ('speaker_url', models.CharField(default=b'', max_length=256, blank=True)),
                 ('state', models.CharField(default=b'created', max_length=64, choices=[(b'revoked', b'Revoked'), (b'reclaimed', b'Reclaimed'), (b'abandoned', b'Abandoned'), (b'created', b'Created'), (b'ready', b'Ready'), (b'testStarting', b'TestStarting'), (b'testing', b'Testing'), (b'liveStarting', b'LiveStarting'), (b'live', b'Live'), (b'complete', b'Complete')])),
                 ('start_time', models.DateTimeField(verbose_name=b'start time')),
