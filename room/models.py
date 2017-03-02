@@ -80,6 +80,22 @@ class YouTube(object):
     return response
   
   @staticmethod
+  def list_stream_health():
+    response = YouTube.get_authenticated_service().liveStreams().list(
+        part="id,snippet,status",
+        mine=True,
+        maxResults=50
+      ).execute()
+    print "here---------------" 
+    results = []
+    for stream in response.get("items", []):
+      results.append({'name': stream["snippet"]["title"], 
+                      'status': stream["status"]["streamStatus"], 
+                      'health': stream["status"]["healthStatus"]['status']})
+
+    return results
+  
+  @staticmethod
   def check_host_up(hostname):
     try:
       from subprocess import DEVNULL # py3k
@@ -513,4 +529,3 @@ class CommonDescription(models.Model):
     return self.link_type + "_" + self.link_subtype
 
 # Create your models here.
-
