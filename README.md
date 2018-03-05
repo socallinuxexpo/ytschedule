@@ -6,14 +6,19 @@ This application manages Youtube Live Streams for all day Confrence supporting m
 Python
 apt-get install python-yaml
 
-pip install django==1.8.3
-pip install django_fsm
+pip install django==1.8.3<br />
+pip install django_fsm<br />
 pip install google-api-python-client
+pip install django-json-response
 pip install logstash_formatter
 pip install pytz
 pip install iso8601
-pip install wakeonlan
+pip install wakeonlan==0.2.2
 pip install mysqlclient
+
+pip install django==1.8.3 django_fsm google-api-python-client logstash_formatter pytz iso8601 wakeonlan==0.2.2 mysqlclient
+
+
 
 install daemon from https://github.com/stackd/daemon-py/
 
