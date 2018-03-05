@@ -78,7 +78,7 @@ class YouTube(object):
         maxResults=50
       ).execute()
     return response
-  
+
   @staticmethod
   def list_stream_health():
     response = YouTube.get_authenticated_service().liveStreams().list(
@@ -86,15 +86,15 @@ class YouTube(object):
         mine=True,
         maxResults=50
       ).execute()
-    print "here---------------" 
+    print "here---------------"
     results = []
     for stream in response.get("items", []):
-      results.append({'name': stream["snippet"]["title"], 
-                      'status': stream["status"]["streamStatus"], 
+      results.append({'name': stream["snippet"]["title"],
+                      'status': stream["status"]["streamStatus"],
                       'health': stream["status"]["healthStatus"]['status']})
-
+    results.sort();                    
     return results
-  
+
   @staticmethod
   def check_host_up(hostname):
     try:
@@ -102,19 +102,19 @@ class YouTube(object):
     except ImportError:
       import os
       DEVNULL = open(os.devnull, 'wb')
-  
+
     response = subprocess.call(["ping", "-c", "1", hostname], stdout=DEVNULL, stderr=subprocess.STDOUT)
     if response == 0:
       logger.info('%s is up!', hostname)
     else:
      logger.info('%s is down!', hostname)
     return response
-  
+
   @staticmethod
   def wake_host_up(mac):
     logger.info("Sending WOL to %s", mac)
     wol.send_magic_packet(mac)
-  
+
   @staticmethod
   def set_default_video_info(broadcast):
     youtube = YouTube.get_authenticated_service()
@@ -126,7 +126,7 @@ class YouTube(object):
     video['status']['embeddable'] = True
     video['snippet']['categoryId'] = 28
     video['snippet']['defaultLanguage'] = 'en'
-    
+
     if 'recordingDetails' not in video.keys():
       video['recordingDetails'] = dict()
     if 'location' not in video['recordingDetails']:
@@ -163,7 +163,7 @@ class YouTube(object):
       list_streams_request = youtube.liveStreams().list_next(
         list_streams_request, list_streams_response)
     return streams
-  
+
   @staticmethod
   def find_stream_by_title(title):
     streams = YouTube.list_streams()
@@ -188,7 +188,7 @@ class YouTube(object):
     except OSError as e:
       logging.error("Execution failed: %s" % e)
       return True
-    return False  
+    return False
 
 class Room(models.Model):
   states = (('error', 'Error'), ('planned', 'Planned'), ('stream_created', 'Stream Created'), ('published', 'Published'), ('testing', 'Testing'), ('live', 'Live'), ('complete', 'Complete'))
@@ -196,7 +196,7 @@ class Room(models.Model):
       { 'trigger': 'publish', 'source': 'planned', 'dest': 'ready', 'before': 'check_stream', 'after': 'after_state' }
   ]
   formats = (("1080p", "1080p"), ("1080p_hfr", "1080p_hfr"), ("720p", "720p"), ("720_hfr", "720p_hfr"), ("480p", "480p"), ("360p", "360p"), ("240p", "240p") )
-  
+
   title = models.CharField(max_length=128)
   name = models.CharField(max_length=64, blank=True)
   description = models.TextField(max_length=5000, blank=True)
@@ -220,10 +220,10 @@ class Room(models.Model):
     logger.debug("Room init called")
 
   def dnsname(self):
-    return self.name.lower().replace(" ", "-") 
+    return self.name.lower().replace(" ", "-")
 
   def cam_name(self):
-    return "%s-cam.scaleav.us" % self.dnsname() 
+    return "%s-cam.scaleav.us" % self.dnsname()
 
   def podium_name(self):
     return "%s-podium.scaleav.us" % self.dnsname()
@@ -254,7 +254,8 @@ class Room(models.Model):
             description=self.description,
           ),
           status=dict(
-            privacyStatus='public' #public, private, or unlisted
+            #privacyStatus='public' #public, private, or unlisted
+            privacyStatus='unlisted' #public, private, or unlisted
           )
         )
       ).execute()
@@ -322,7 +323,7 @@ class Room(models.Model):
       return True
     else:
       return False
-  
+
   @transition(field=state, source='planned', target='stream_created', conditions=[can_create])
   def set_stream(self, stream):
     self.youtube_id = stream['id']
@@ -335,7 +336,7 @@ class Room(models.Model):
     logger.debug(stream)
     self.state = 'stream_created'
     self.save()
-  
+
   @transition(field=state, source='planned', target='stream_created', conditions=[can_create])
   def create_stream(self, check=True):
     logger.debug("Creating stream for %s" % self.title)
@@ -361,8 +362,8 @@ class Room(models.Model):
           logger.error( "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content) )
           self.state = 'error'
           self.save()
-    self.set_stream(stream)  
-  
+    self.set_stream(stream)
+
   def check_stream(self):
     logger.debug( "Checking Stream Status Internal=%s"%self.state )
     youtube = YouTube.get_authenticated_service()
@@ -375,14 +376,14 @@ class Room(models.Model):
 
   def check_state(self):
     return self.check_stream()['status']['streamStatus']
-  
+
   def stream_active(self):
     status = self.check_stream()['status']['healthStatus']['status']
     if status == "good" or status == "ok":
       return True
     else:
       return False
-  
+
   @transition(field=state, source='published', target='testing', conditions=[stream_active])
   def set_testing(self):
     if self.stream_active():
@@ -391,8 +392,8 @@ class Room(models.Model):
       self.save()
     else:
       logger.error("Stream [%s] is not ready!" % self.youtube_id)
-    
-  
+
+
   @transition(field=state, source=['testing','published'], target='live', conditions=[stream_active])
   def set_live(self):
     if self.stream_active():
@@ -401,7 +402,7 @@ class Room(models.Model):
       self.save()
     else:
       logger.error("Stream [%s] is not ready!" % self.youtube_id)
-  
+
   @transition(field=state, source=['testing','live','published','error'], target='complete')
   def set_complete(self):
     status_response = YouTube.set_broadcast_status(self.broadcast_id, 'complete')
@@ -432,8 +433,8 @@ class Room(models.Model):
       seconds = (diff%3600)%60
       if seconds > 0:
         link += "%is" % seconds
-      desc += "%s to %s: %s: %s \n" % (YouTube.lt(talk.start_time).strftime('%I:%M %p'), 
-                                                       YouTube.lt(talk.end_time).strftime('%I:%M %p %Z'), 
+      desc += "%s to %s: %s: %s \n" % (YouTube.lt(talk.start_time).strftime('%I:%M %p'),
+                                                       YouTube.lt(talk.end_time).strftime('%I:%M %p %Z'),
                                                        talk.title, talk.talk_url)
     desc += "Southern Californa Linux Expo: https://www.socallinuxexpo.org/scale/14x\n"
     self.description = desc
@@ -441,7 +442,7 @@ class Room(models.Model):
 
 class Talk(models.Model):
   states = (('created', 'Created'), ('published','Published'), ('testing', 'Testing'), ('live', 'Live'), ('complete', 'Complete'))
-  room = models.ForeignKey(Room) 
+  room = models.ForeignKey(Room)
   title= models.CharField(max_length=200)
   description = models.TextField(max_length=1024)
   talk_url = models.CharField(max_length=256, default="", blank=True)
@@ -452,15 +453,15 @@ class Talk(models.Model):
   end_time = models.DateTimeField('end time')
   pub_date = models.DateTimeField('date published', default=datetime.datetime.now(), blank=True)
   broadcast_id = models.CharField(max_length=64, default="", blank=True)
-  
+
   def __unicode__(self):
     return self.title
-  
+
   def clean(self):
     # start before end
     if self.start_time >= self.end_time:
       raise ValidationError(_('Must Start before End and have length.'))
-  
+
   def publish(self):
     logger.debug("Creating Live Broadcast for Talk %s" % self.title)
     try:
@@ -475,7 +476,8 @@ class Talk(models.Model):
             description=self.description,
           ),
           status=dict(
-            privacyStatus='public'
+            #privacyStatus='public'
+            privacyStatus='unlisted'
           )
         )
       ).execute()
@@ -495,7 +497,7 @@ class Talk(models.Model):
     except HttpError, e:
       logger.error("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
       self.save()
-  
+
   @transition(field=state, source=['published'], target='testing')
   def set_testing(self):
     if self.room.stream_active():
@@ -504,7 +506,7 @@ class Talk(models.Model):
       self.save()
     else:
       logger.error("Stream [%s] is not ready!" % self.broadcast_id)
-  
+
   @transition(field=state, source=['testing'], target='live')
   def set_live(self):
     if self.room.stream_active():
@@ -513,7 +515,7 @@ class Talk(models.Model):
       self.save()
     else:
       logger.error("Stream [%s] is not ready!" % self.broadcast_id)
-  
+
   @transition(field=state, source=['live'], target='complete')
   def set_complete(self):
     status_response = YouTube.set_broadcast_status(self.broadcast_id, 'complete')
@@ -524,7 +526,7 @@ class CommonDescription(models.Model):
   link_type = models.CharField(max_length=64, choices=(('room', 'Room'), ('talk', 'Talk')), blank=False)
   link_subtype = models.CharField(max_length=64, choices=(('beginning', 'Beginning'), ('end', 'End')), blank=False)
   description = models.TextField(max_length=1024)
-  
+
   def __unicode__(self):
     return self.link_type + "_" + self.link_subtype
 
