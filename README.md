@@ -15,8 +15,10 @@ pip install pytz<br />
 pip install iso8601<br />
 pip install wakeonlan==0.2.2<br />
 pip install mysqlclient<br />
+pip install django-bootstrap3<br />
+pip install django-tastypie<br />
 
-pip install django==1.8.3 django_fsm google-api-python-client logstash_formatter pytz iso8601 wakeonlan==0.2.2 mysqlclient
+pip install django==1.8.3 django_fsm google-api-python-client logstash_formatter pytz iso8601 wakeonlan==0.2.2 mysqlclient django-bootstrap3 django-tastypie 
 
 
 
@@ -31,7 +33,7 @@ python manage.py migrate
 python manage.py createsuperuser
 
 ## Get client_secret.json
-Go to: https://console.developers.google.com/apis/credentials 
+Go to: https://console.developers.google.com/apis/credentials
 Click on new credentials and select "OAuth client id"
 select other
 set a name
@@ -54,11 +56,9 @@ script/import_signxml
 # Try the admin interface
 Run: python manage.py runserver
 
-then point browser at http://localhost:8080/admin 
+then point browser at http://localhost:8080/admin
 
 # Try exporting a room to Youtube
 Run: script/publish_room.py
 
 This will create a live stream and live broadcast for the Room and a live broadcast for each talk linked to the live stream for the Room.
-
-
