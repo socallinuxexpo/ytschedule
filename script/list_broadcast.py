@@ -43,12 +43,14 @@ if __name__ == "__main__":
   else:
     status = 'all'
 
-  results = YouTube.list_broadcast(status)
-  print "Showing %s of %s results." % (len(results['items']), results['pageInfo']['totalResults'])
+  print YouTube.list_stream_health()
+
+  #results = YouTube.list_broadcast(status)
+  #print "Showing %s of %s results." % (len(results['items']), results['pageInfo']['totalResults'])
 
   #print results['pageInfo']['totalResults']
   #print len(results['items'])
-  for broadcast in results['items']:
-    print "[%s] video_id=%s" % (broadcast['status']['lifeCycleStatus'], broadcast['id'])
+  #for broadcast in results['items']:
+  #  print "[%s] video_id=%s" % (broadcast['status']['lifeCycleStatus'], broadcast['id'])
   #pprint.pprint(results)
 
