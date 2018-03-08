@@ -92,7 +92,7 @@ class YouTube(object):
       results.append({'name': stream["snippet"]["title"],
                       'status': stream["status"]["streamStatus"],
                       'health': stream["status"]["healthStatus"]['status']})
-    results.sort();                    
+    results.sort();
     return results
 
   @staticmethod
@@ -254,8 +254,8 @@ class Room(models.Model):
             description=self.description,
           ),
           status=dict(
-            #privacyStatus='public' #public, private, or unlisted
-            privacyStatus='unlisted' #public, private, or unlisted
+            privacyStatus='public' #public, private, or unlisted
+            #privacyStatus='unlisted' #public, private, or unlisted
           )
         )
       ).execute()
