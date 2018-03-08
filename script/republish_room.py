@@ -6,7 +6,7 @@ import iso8601
 from xml.etree.ElementTree import Element, SubElement, dump, parse, tostring, fromstring
 import os, sys
 import django
-from daemon import Daemon
+#from daemon import Daemon
 
 rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
 
@@ -32,11 +32,11 @@ if __name__ == "__main__":
   formatter = logging.Formatter('%(levelname)s - %(message)s')
   ch.setFormatter(formatter)
   logger.addHandler(ch)
-  
+
   rooms = []
   if len(sys.argv) > 1:
     if sys.argv[1].lower() == "all":
-      rooms = Room.objects.all() 
+      rooms = Room.objects.all()
     else:
       rooms.append( Room.objects.get(id=sys.argv[1]) )
   else:
@@ -51,4 +51,3 @@ if __name__ == "__main__":
 #    talks = Talk.objects.filter(room=room)
 #    for talk in talks:
 #      talk.publish()
-
