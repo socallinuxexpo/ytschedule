@@ -18,11 +18,10 @@ pip install mysqlclient<br />
 pip install django-bootstrap3<br />
 pip install django-tastypie<br />
 
-pip install django==1.8.3 django_fsm google-api-python-client logstash_formatter pytz iso8601 wakeonlan==0.2.2 mysqlclient django-bootstrap3 django-tastypie 
+pip install django==1.8.3 django_fsm google-api-python-client logstash_formatter pytz iso8601 wakeonlan==0.2.2 mysqlclient django-bootstrap3 django-tastypie
 
 
-
-install daemon from https://github.com/stackd/daemon-py/
+install daemon from https://github.com/socallinuxexpo/daemon-py.git
 
 #### Getting Started
 
