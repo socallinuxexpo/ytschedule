@@ -278,7 +278,7 @@ class Room(models.Model):
       self.state = 'error'
       self.save()
 
-  @transition(field=state, source=['live', 'error'], target='published')
+  @transition(field=state, source=['live', 'error','published'], target='published')
   def republish(self):
     logger.debug("Creating Live Broadcast for Room %s" % self.title)
     print datetime.datetime.now().isoformat()
@@ -436,7 +436,7 @@ class Room(models.Model):
       desc += "%s to %s: %s: %s \n" % (YouTube.lt(talk.start_time).strftime('%I:%M %p'),
                                                        YouTube.lt(talk.end_time).strftime('%I:%M %p %Z'),
                                                        talk.title, talk.talk_url)
-    desc += "Southern Californa Linux Expo: https://www.socallinuxexpo.org/scale/14x\n"
+    desc += "Southern Californa Linux Expo: https://www.socallinuxexpo.org/scale/16x\n"
     self.description = desc
     self.save()
 
