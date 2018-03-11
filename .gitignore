@@ -4,4 +4,5 @@
 **/*.pyc
 run/*
 ytschedule/settings/production.py
+client2
 
