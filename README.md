@@ -41,7 +41,7 @@ click ok
 Then click on the download button and save client_serects.json in your working directory.
 
 
-## Pupulate data
+## Populate data
 Use fake data or signs method.
 
 # Set fake data
