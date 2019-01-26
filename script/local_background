@@ -44,7 +44,7 @@ class LocalBackground(YtScheduleBG):
           elif (result.end_time-now).total_seconds()/60 < -20 and result.state == "completed":
             logging.debug("Stop youtube streamer.")
             YouTube.runcmd("sudo service youtube_1080 stop")
-          
+
           q = Talk.objects.filter(room=result)
           q = q.filter(start_time__lte=now+datetime.timedelta(seconds=5*60))
           q = q.filter(end_time__gte=now-datetime.timedelta(seconds=15*60))
@@ -72,4 +72,3 @@ if __name__ == "__main__":
   os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ytschedule.settings.production")
   daemon = LocalBackground( os.path.join(rundir, "%s.pid" % os.path.basename(__file__)) )
   daemon.process_cmd(sys.argv)
-

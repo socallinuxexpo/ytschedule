@@ -7,26 +7,6 @@
 <script type="text/javascript">
 var streamPoll = angular.module('streamPoll',["restangular"]);
 
-// streamPoll.controller("MainCtrl",["Restangular","$scope",function(Restangular,$scope){
-//       var resource = Restangular.all('api/v1/stream/');
-//       resource.getList().then(function(streams){
-//         $scope.streams = streams.objects;
-//       });
-// }])
-// streamPoll.controller('Ctrl1', ["Restangular","$scope","$timeout",function(Restangular,$scope, $timeout) {
-//    $scope.value = 1;
-//     var poll = function() {
-//         $timeout(function() {
-//             $scope.value++;
-//             var resource = Restangular.all('api/v1/stream/');
-//             resource.getList().then(function(streams){
-//               $scope.streams = streams.objects;
-//             });
-//             poll();
-//         }, 1000);
-//     };
-//    poll();
-// }]);
 streamPoll.controller('MainCtrl', ["Restangular","$scope","$timeout",function(Restangular,$scope, $timeout) {
    $scope.loads = 1;
    $scope.atTime = new Date();
@@ -47,24 +27,24 @@ streamPoll.controller('MainCtrl', ["Restangular","$scope","$timeout",function(Re
     };
    poll();
 }]);
-// streamPoll.controller("MainCtrl",["Restangular","$scope",function(Restangular,$scope,$timeout){
-//   var poll = function(){
-//     $timeout(function() {
-//       var resource = Restangular.all('api/v1/stream/');
-//       resource.getList().then(function(streams){
-//         $scope.streams = streams.objects;
-//         poll();
-//       });
-//     }, 1000);
-//   };
-//   poll();
-// }])
-// angularExample.controller("MainCtrl",["Restangular","$scope",function(Restangular,$scope){
-//   var resource = Restangular.all('api/v1/stream/')
-//   resource.getList().then(function(streams){
-//     $scope.streams = streams.objects;
-//   });
-// }])
+var clockPoll = angular.module('streamPoll');
+
+clockPoll.controller('clock', ["$scope","$timeout",function($scope, $timeout) {
+   $scope.atTime = new Date();
+   // resource.getList().then(function(streams){
+   //   $scope.streams = streams.objects;
+   // });
+    var poll = function() {
+        $timeout(function() {
+            $scope.atTime = new Date();
+            // resource.getList().then(function(streams){
+            //   $scope.streams = streams.objects;
+            // });
+            poll();
+        }, 1000);
+    };
+   poll();
+}]);
 </script>
 <style>
 table.status {width: 100%;}
@@ -79,12 +59,14 @@ table.status tr.noData td {color: grey;}
 table.status tr.bad td {color: red;}
 table.status tr.ok td {color: black;}
 table.status tr.good td {color: yellow;}
+
+div.time {width: 100%; text-align: center; font-size: xx-large;}
 </style>
 </head>
 
 <body>
-
 {% verbatim %}
+<div data-ng-controller="clock" class="time">{{ atTime.toTimeString() }}<div>
 <table data-ng-controller="MainCtrl" class="status">
     <tr>
       <th>Health</th>

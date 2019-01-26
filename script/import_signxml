@@ -79,17 +79,22 @@ if __name__ == "__main__":
     speaker = node.findtext("Speakers")
     url = u"%s%s" %(base_url, node.findtext("Path"))
     description = u"Talk by %s\n\n%s\nMore info at: %s\n" %(speaker, django.utils.html.strip_tags(node.findtext("Short-abstract")), url)
+    topic = node.findtext("Topic")
     q = Talk.objects.filter(title=title)
     if len(q) == 0:
-      talk = Talk(room_id=room_obj.id, title=title, start_time=start_time, end_time=end_time)
+      if topic != "BoFs":
+        talk = Talk(room_id=room_obj.id, title=title, start_time=start_time, end_time=end_time)
     else:
       talk = q[0]
-    talk.start_time = start_time
-    talk.end_time = end_time
-    talk.description = description
-    talk.talk_url = url
-    talk.speaker_name = node.findtext("Speakers")
-    talk.save()
+      if topic != "BoFs":
+        talk.delete()
+    if topic != "BoFs":
+      talk.start_time = start_time
+      talk.end_time = end_time
+      talk.description = description
+      talk.talk_url = url
+      talk.speaker_name = node.findtext("Speakers")
+      talk.save()
 
 
 

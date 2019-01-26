@@ -6,8 +6,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'ytschedule',
         'USER': 'ytschedule',
-        'PASSWORD': 'ytschedule',
-        'HOST': 'localhost',
+        'PASSWORD': 'YTschedule13',
+        'HOST': '10.0.5.12',
         'PORT': '',
         'OPTIONS': {
           'sql_mode': 'TRADITIONAL',

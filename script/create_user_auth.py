@@ -7,7 +7,7 @@ from xml.etree.ElementTree import Element, SubElement, dump, parse, tostring, fr
 import os, sys
 import django
 import argparse
-from daemon import Daemon
+#from daemon import Daemon
 from oauth2client.tools import argparser
 
 rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))

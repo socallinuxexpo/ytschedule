@@ -1,0 +1,30 @@
+<html ng-app="angularexample">
+<head>
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
+<script src="http://cdn.jsdelivr.net/restangular/1.1.3/restangular.min.js"></script>
+<script src="http://cdn.jsdelivr.net/underscorejs/1.5.1/underscore-min.js"></script>
+
+<script type="text/javascript">
+var angularExample =angular.module('angularexample',["restangular"])
+angularExample.config(["RestangularProvider",function(RestangularProvider){
+  RestangularProvider.setRestangularFields({
+    id: "_id"
+  });
+}]);
+angularExample.controller("MainCtrl",["Restangular","$scope",function(Restangular,$scope){
+  var resource = Restangular.all('api/streams')
+  resource.getList().then(function(streams){
+    $scope.streams = streams;
+  });
+}])
+</script>
+</head>
+
+<body>
+<div ng-controller="MainCtrl">
+  <div ng-repeat="stream in streams">
+    Stream name: {{stream.name}}<br/>
+  </div>
+</div>
+</body>
+</html>

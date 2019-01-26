@@ -48,6 +48,6 @@ if __name__ == "__main__":
     room.create_stream()
     room.publish()
 
-    talks = Talk.objects.filter(room=room)
-    for talk in talks:
-      talk.publish()
+#    talks = Talk.objects.filter(room=room)
+#    for talk in talks:
+#      talk.publish()
