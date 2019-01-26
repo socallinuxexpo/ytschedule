@@ -13,4 +13,3 @@ urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'^api/',  include(v1_api.urls)),
 ]
-

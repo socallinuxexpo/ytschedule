@@ -1,10 +1,12 @@
 #!/usr/bin/python
 
+from room.models import *
 import datetime
 import pytz
 import iso8601
 from xml.etree.ElementTree import Element, SubElement, dump, parse, tostring, fromstring
-import os, sys
+import os
+import sys
 import django
 #from daemon import Daemon
 
@@ -14,91 +16,92 @@ path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 sys.path.append(path)
 os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings.production"
 
-from room.models import *
 
-TIME_ZONE ='America/Los_Angeles'
+TIME_ZONE = 'America/Los_Angeles'
 
 tz = pytz.timezone(TIME_ZONE)
 
 if __name__ == "__main__":
-  django.setup()
+    django.setup()
 
-  logger = logging.getLogger()
-  logger.setLevel(logging.WARNING)
+    logger = logging.getLogger()
+    logger.setLevel(logging.WARNING)
 
-  ch = logging.StreamHandler(sys.stdout)
-  ch.setLevel(logging.DEBUG)
-  formatter = logging.Formatter('%(levelname)s - %(message)s')
-  ch.setFormatter(formatter)
-  logger.addHandler(ch)
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
-  if len(sys.argv) > 1:
-    xml_filename = sys.argv[1]
-  else:
-    xml_filename = "example_data/sign.xml"
-
-  if len(sys.argv) > 2:
-    base_url = sys.argv[2]
-  else:
-    base_url = "https://www.socallinuxexpo.org"
-
-  if not os.path.isfile(xml_filename):
-    logger.error("File %s does not exist." % xml_filename)
-    exit(-1)
-
-
-  root = parse(xml_filename).getroot()
-  rooms = {}
-
-  for node in root:
-    start = fromstring(node.findtext("Time")).findall("span")[0].get("content")
-    end = fromstring(node.findtext("Time")).findall("span")[1].get("content")
-    start_time = iso8601.parse_date(start)
-    end_time = iso8601.parse_date(end)
-    roomname = node.findtext("Room")
-    comp = u"%s %s"%(roomname,start_time.strftime('%A %b. %d - SCaLE 16x'))
-
-    q = Room.objects.filter(title=comp)
-    if len(q) == 0:
-      #print "not found"
-      room_obj = Room(name=roomname, title=comp, start_time=start_time, end_time=end_time)
-      room_obj.save()
+    if len(sys.argv) > 1:
+        xml_filename = sys.argv[1]
     else:
-      #print "found"
-      room_obj = q[0]
-    #print room.start_time.astimezone(tz)
-    # Handle room
-    if comp in rooms.keys():
-      if rooms[comp]["start"] > start_time:
-        rooms[comp]["start"] = start_time
-      if rooms[comp]["end"] < end_time:
-        rooms[comp]["end"] = end_time
+        xml_filename = "example_data/sign.xml"
+
+    if len(sys.argv) > 2:
+        base_url = sys.argv[2]
     else:
-      rooms[comp] = {"start": start_time, "end": end_time}
-    title = node.findtext("Title")
-    speaker = node.findtext("Speakers")
-    url = u"%s%s" %(base_url, node.findtext("Path"))
-    description = u"Talk by %s\n\n%s\nMore info at: %s\n" %(speaker, django.utils.html.strip_tags(node.findtext("Short-abstract")), url)
-    q = Talk.objects.filter(title=title)
-    if len(q) == 0:
-      talk = Talk(room_id=room_obj.id, title=title, start_time=start_time, end_time=end_time)
-    else:
-      talk = q[0]
-    talk.start_time = start_time
-    talk.end_time = end_time
-    talk.description = description
-    talk.talk_url = url
-    talk.speaker_name = node.findtext("Speakers")
-    talk.save()
+        base_url = "https://www.socallinuxexpo.org"
 
+    if not os.path.isfile(xml_filename):
+        logger.error("File %s does not exist." % xml_filename)
+        exit(-1)
 
+    root = parse(xml_filename).getroot()
+    rooms = {}
 
+    for node in root:
+        start = fromstring(node.findtext("Time")).findall(
+            "span")[0].get("content")
+        end = fromstring(node.findtext("Time")).findall(
+            "span")[1].get("content")
+        start_time = iso8601.parse_date(start)
+        end_time = iso8601.parse_date(end)
+        roomname = node.findtext("Room")
+        comp = u"%s %s" % (
+            roomname, start_time.strftime('%A %b. %d - SCaLE 16x'))
 
-  for room in rooms:
-    #add room
-    print "%s: %s <--> %s" %(room, rooms[room]["start"], rooms[room]["end"])
-    room_obj = Room.objects.filter(title=room)[0]
-    print room_obj
-    room_obj.start_time=rooms[room]["start"]
-    room_obj.end_time=rooms[room]["end"]
-    room_obj.save()
+        q = Room.objects.filter(title=comp)
+        if len(q) == 0:
+            # print "not found"
+            room_obj = Room(name=roomname, title=comp,
+                            start_time=start_time, end_time=end_time)
+            room_obj.save()
+        else:
+            # print "found"
+            room_obj = q[0]
+        # print room.start_time.astimezone(tz)
+        # Handle room
+        if comp in rooms.keys():
+            if rooms[comp]["start"] > start_time:
+                rooms[comp]["start"] = start_time
+            if rooms[comp]["end"] < end_time:
+                rooms[comp]["end"] = end_time
+        else:
+            rooms[comp] = {"start": start_time, "end": end_time}
+        title = node.findtext("Title")
+        speaker = node.findtext("Speakers")
+        url = u"%s%s" % (base_url, node.findtext("Path"))
+        description = u"Talk by %s\n\n%s\nMore info at: %s\n" % (
+            speaker, django.utils.html.strip_tags(node.findtext("Short-abstract")), url)
+        q = Talk.objects.filter(title=title)
+        if len(q) == 0:
+            talk = Talk(room_id=room_obj.id, title=title,
+                        start_time=start_time, end_time=end_time)
+        else:
+            talk = q[0]
+        talk.start_time = start_time
+        talk.end_time = end_time
+        talk.description = description
+        talk.talk_url = url
+        talk.speaker_name = node.findtext("Speakers")
+        talk.save()
+
+    for room in rooms:
+        # add room
+        print "%s: %s <--> %s" % (room, rooms[room]["start"], rooms[room]["end"])
+        room_obj = Room.objects.filter(title=room)[0]
+        print room_obj
+        room_obj.start_time = rooms[room]["start"]
+        room_obj.end_time = rooms[room]["end"]
+        room_obj.save()

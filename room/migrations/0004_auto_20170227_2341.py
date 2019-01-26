@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='talk',
             name='pub_date',
-            field=models.DateTimeField(default=datetime.datetime(2017, 2, 27, 23, 41, 26, 905469), verbose_name=b'date published', blank=True),
+            field=models.DateTimeField(default=datetime.datetime(
+                2017, 2, 27, 23, 41, 26, 905469), verbose_name=b'date published', blank=True),
         ),
     ]

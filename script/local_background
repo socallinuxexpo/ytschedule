@@ -1,6 +1,10 @@
 #!/usr/bin/env python2
 
-import sys, os, datetime, pytz
+from room.models import *
+import sys
+import os
+import datetime
+import pytz
 from daemon import Daemon
 from utils.background import YtScheduleBG
 from django.db.models import Q
@@ -10,66 +14,80 @@ path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
 sys.path.append(path)
 
-from room.models import *
 
 class LocalBackground(YtScheduleBG):
-  def work(self):
-    now = datetime.datetime.now(self.tz)
-    query = Room.objects.filter(Q(state="published") | Q(state="testing") | Q(state="live"))
-    query = query.filter(start_time__lte=now+datetime.timedelta(seconds=60*60))
-    query = query.filter(end_time__gte=now-datetime.timedelta(seconds=30*60))
-    query = query.filter(name=self.configuration['room_name'])
-    if len(query) > 0:
-      for result in query:
-        try:
-          logging.debug("[%s]: %s -- %s %s"%(result.title, result.start_time, result.end_time, result.state))
-          bcast_status = YouTube.broadcast_status(result.broadcast_id)
-          logging.debug("Current broadcast status [%s]" % bcast_status)
-          minutes = (result.start_time-now).total_seconds()/60
-          if minutes < 20 and result.state == "testing":
-            if bcast_status == "testing":
-              result.set_live()
-              logging.debug("Set liveStream to Live.")
-            else:
-              YouTube.runcmd("sudo service youtube_1080 start")
-          elif minutes < 60 and result.state == "published":
-            if bcast_status == "ready":
-              result.set_testing()
-              logging.debug("Set liveStream to Testing.")
-            else:
-              YouTube.runcmd("sudo service youtube_1080 start")
-          elif (result.end_time-now).total_seconds()/60 < -20 and result.state == "live":
-            logging.debug("Set liveStream to Complete.")
-            result.set_complete()
-          elif (result.end_time-now).total_seconds()/60 < -20 and result.state == "completed":
-            logging.debug("Stop youtube streamer.")
-            YouTube.runcmd("sudo service youtube_1080 stop")
-          
-          q = Talk.objects.filter(room=result)
-          q = q.filter(start_time__lte=now+datetime.timedelta(seconds=5*60))
-          q = q.filter(end_time__gte=now-datetime.timedelta(seconds=15*60))
-          if len(q) > 0:
-            for talk in q:
-              try:
-                logging.debug( "[%s]: %s -- %s [%s]"%(talk.title, talk.start_time, talk.end_time, result.state) )
-                if True:
-                  minutes = (talk.start_time-now).total_seconds()/60
-                  if minutes < 10 and talk.state == "published":
-                    logging.debug("Set liveStream to Testing.")
-                    talk.set_testing()
-                  elif minutes < 5 and talk.state == "testing":
-                    logging.debug("Set liveStream to Live.")
-                    talk.set_live()
-                  elif (talk.end_time-now).total_seconds()/60 < -10 and talk.state == "live":
-                    logging.debug("Set liveStream to Live.")
-                    talk.set_complete()
-              except ( RuntimeError, django_fsm.TransitionNotAllowed ) as e:
-                logging.error("Promblem in talk loop: %s" % e)
-        except ( RuntimeError, django_fsm.TransitionNotAllowed ) as e:
-          logging.error("Promblem in room loop: %s" % e)
+    def work(self):
+        now = datetime.datetime.now(self.tz)
+        query = Room.objects.filter(Q(state="published") | Q(
+            state="testing") | Q(state="live"))
+        query = query.filter(start_time__lte=now +
+                             datetime.timedelta(seconds=60*60))
+        query = query.filter(
+            end_time__gte=now-datetime.timedelta(seconds=30*60))
+        query = query.filter(name=self.configuration['room_name'])
+        if len(query) > 0:
+            for result in query:
+                try:
+                    logging.debug("[%s]: %s -- %s %s" % (result.title,
+                                                         result.start_time, result.end_time, result.state))
+                    bcast_status = YouTube.broadcast_status(
+                        result.broadcast_id)
+                    logging.debug(
+                        "Current broadcast status [%s]" % bcast_status)
+                    minutes = (result.start_time-now).total_seconds()/60
+                    if minutes < 20 and result.state == "testing":
+                        if bcast_status == "testing":
+                            result.set_live()
+                            logging.debug("Set liveStream to Live.")
+                        else:
+                            YouTube.runcmd("sudo service youtube_1080 start")
+                    elif minutes < 60 and result.state == "published":
+                        if bcast_status == "ready":
+                            result.set_testing()
+                            logging.debug("Set liveStream to Testing.")
+                        else:
+                            YouTube.runcmd("sudo service youtube_1080 start")
+                    elif (result.end_time-now).total_seconds()/60 < -20 and result.state == "live":
+                        logging.debug("Set liveStream to Complete.")
+                        result.set_complete()
+                    elif (result.end_time-now).total_seconds()/60 < -20 and result.state == "completed":
+                        logging.debug("Stop youtube streamer.")
+                        YouTube.runcmd("sudo service youtube_1080 stop")
+
+                    q = Talk.objects.filter(room=result)
+                    q = q.filter(start_time__lte=now +
+                                 datetime.timedelta(seconds=5*60))
+                    q = q.filter(end_time__gte=now -
+                                 datetime.timedelta(seconds=15*60))
+                    if len(q) > 0:
+                        for talk in q:
+                            try:
+                                logging.debug(
+                                    "[%s]: %s -- %s [%s]" % (talk.title, talk.start_time, talk.end_time, result.state))
+                                if True:
+                                    minutes = (talk.start_time -
+                                               now).total_seconds()/60
+                                    if minutes < 10 and talk.state == "published":
+                                        logging.debug(
+                                            "Set liveStream to Testing.")
+                                        talk.set_testing()
+                                    elif minutes < 5 and talk.state == "testing":
+                                        logging.debug(
+                                            "Set liveStream to Live.")
+                                        talk.set_live()
+                                    elif (talk.end_time-now).total_seconds()/60 < -10 and talk.state == "live":
+                                        logging.debug(
+                                            "Set liveStream to Live.")
+                                        talk.set_complete()
+                            except (RuntimeError, django_fsm.TransitionNotAllowed) as e:
+                                logging.error("Promblem in talk loop: %s" % e)
+                except (RuntimeError, django_fsm.TransitionNotAllowed) as e:
+                    logging.error("Promblem in room loop: %s" % e)
+
 
 if __name__ == "__main__":
-  os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ytschedule.settings.production")
-  daemon = LocalBackground( os.path.join(rundir, "%s.pid" % os.path.basename(__file__)) )
-  daemon.process_cmd(sys.argv)
-
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE",
+                          "ytschedule.settings.production")
+    daemon = LocalBackground(os.path.join(
+        rundir, "%s.pid" % os.path.basename(__file__)))
+    daemon.process_cmd(sys.argv)
