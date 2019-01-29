@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
                 ('end_time', models.DateTimeField(verbose_name=b'end time')),
                 ('pub_date', models.DateTimeField(default=datetime.datetime(2016, 1, 10, 4, 41, 35, 431144), verbose_name=b'date published', blank=True)),
                 ('broadcast_id', models.CharField(default=b'', max_length=64, blank=True)),
-                ('room', models.ForeignKey(to='room.Room')),
+                ('room', models.ForeignKey(to='room.Room', on_delete=models.CASCADE)),
             ],
         ),
     ]
