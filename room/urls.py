@@ -10,7 +10,7 @@ v1_api.register(StreamResource())
 
 urlpatterns = [
     # ex: /
-    url(r'^$', views.index, name='index'),
+    url(r'^$', views.index),
     url(r'^$', views.index, name='all'),
     url(r'^$', views.index, name='upcomming'),
     url(r'^api/',  include(v1_api.urls)),
