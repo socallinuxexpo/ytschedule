@@ -345,9 +345,9 @@ class Room(models.Model):
 
             snippet = insert_broadcast_response["snippet"]
 
-            logger.info("Broadcast '%s' with title '%s' was published at '%s'." % (
-                insert_broadcast_response["id"], snippet["title"],
-                        snippet["publishedAt"]))
+            logger.info("Broadcast '%s' with title '%s' was published at '%s'."
+                        % (insert_broadcast_response["id"], snippet["title"],
+                           snippet["publishedAt"]))
 
             logger.debug(insert_broadcast_response)
             self.broadcast_id = insert_broadcast_response["id"]
