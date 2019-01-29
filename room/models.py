@@ -84,7 +84,7 @@ class YouTube(object):
             part="id,status",
             broadcastStatus=status,
             maxResults=50).execute()
-    return response
+        return response
 
     @staticmethod
     def list_stream_health():
@@ -324,43 +324,42 @@ class Room(models.Model):
                 target='published')
     def republish(self):
         logger.debug("Creating Live Broadcast for Room %s" % self.title)
-    print(datetime.datetime.now().isoformat())
-    print((datetime.datetime.now()+datetime.timedelta(0, 60)).isoformat())
-    try:
-        youtube = YouTube.get_authenticated_service()
-        insert_broadcast_response = youtube.liveBroadcasts().insert(
-            part="snippet,status",
-            body=dict(
-                snippet=dict(
-                    title=self.title,
-                    scheduledStartTime=self.start_time.isoformat(),
-                    scheduledEndTime=self.end_time.isoformat(),
-                    description=self.description,
-                ),
-                status=dict(
-                    privacyStatus='public'  # public, private, or unlisted
+        print(datetime.datetime.now().isoformat())
+        print((datetime.datetime.now()+datetime.timedelta(0, 60)).isoformat())
+        try:
+            youtube = YouTube.get_authenticated_service()
+            insert_broadcast_response = youtube.liveBroadcasts().insert(
+                part="snippet,status",
+                body=dict(
+                    snippet=dict(
+                        title=self.title,
+                        scheduledStartTime=self.start_time.isoformat(),
+                        scheduledEndTime=self.end_time.isoformat(),
+                        description=self.description,
+                    ),
+                    status=dict(
+                        privacyStatus='public'  # public, private, or unlisted
+                    )
                 )
-            )
-        ).execute()
+            ).execute()
 
-        snippet = insert_broadcast_response["snippet"]
+            snippet = insert_broadcast_response["snippet"]
 
-        logger.info("Broadcast '%s' with title '%s' was published at '%s'." % (
-            insert_broadcast_response["id"], snippet["title"],
-                    snippet["publishedAt"]))
+            logger.info("Broadcast '%s' with title '%s' was published at '%s'." % (
+                insert_broadcast_response["id"], snippet["title"],
+                        snippet["publishedAt"]))
 
-        logger.debug(insert_broadcast_response)
-        self.broadcast_id = insert_broadcast_response["id"]
-        self.pub_date = snippet["publishedAt"]
+            logger.debug(insert_broadcast_response)
+            self.broadcast_id = insert_broadcast_response["id"]
+            self.pub_date = snippet["publishedAt"]
 
-        YouTube.set_default_video_info(self)
-        YouTube.bind_broadcast(self.broadcast_id, self.youtube_id)
-        self.state = 'published'
-        self.save()
-    except HttpError as e:
-        logger.error("An HTTP error %d occurred:\n%s" %
-                     (e.resp.status, e.content))
-        self.state = 'error'
+            YouTube.set_default_video_info(self)
+            YouTube.bind_broadcast(self.broadcast_id, self.youtube_id)
+            self.state = 'published'
+        except HttpError as e:
+            logger.error("An HTTP error %d occurred:\n%s" %
+                         (e.resp.status, e.content))
+            self.state = 'error'
         self.save()
 
     def can_create(instance):
@@ -598,8 +597,8 @@ class Talk(models.Model):
             status_response = YouTube.set_broadcast_status(
                 self.broadcast_id,
                 'live')
-        self.state = 'live'
-        self.save()
+            self.state = 'live'
+            self.save()
         else:
             logger.error("Stream [%s] is not ready!" % self.broadcast_id)
 
