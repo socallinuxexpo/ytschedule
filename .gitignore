@@ -6,3 +6,4 @@ run/*
 ytschedule/settings/production.py
 client2
 .coverage
+htmlcov/**
