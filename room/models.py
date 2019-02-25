@@ -5,6 +5,8 @@ import httplib2
 import subprocess
 # import yaml
 # import pytz
+import os
+import sys
 import pprint
 import wakeonlan as wol
 from django_fsm import FSMField, transition
@@ -20,7 +22,13 @@ import google.oauth2.credentials
 import google_auth_oauthlib.flow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from google_auth_oauthlib.flow import InstalledAppFlow
+
+from oauth2client.file import Storage
+from oauth2client.client import flow_from_clientsecrets
+from oauth2client.tools import argparser, run_flow
 
 
 logger = logging.getLogger(__name__)
@@ -34,17 +42,40 @@ CLIENT_SECRETS_FILE = 'client_secret.json'
 SCOPES = ['https://www.googleapis.com/auth/youtube']
 API_SERVICE_NAME = 'youtube'
 API_VERSION = 'v3'
-
+# Helpful message to display if the CLIENT_SECRETS_FILE is missing.
+MISSING_CLIENT_SECRETS_MESSAGE = """
+WARNING: Please configure OAuth 2.0
+To make this sample run you will need to populate the client_secrets.json file
+found at:
+   %s
+with information from the Developers Console
+https://console.developers.google.com
+For more information about the client_secrets.json file format, please visit:
+https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
+""" % os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                   CLIENT_SECRETS_FILE))
 
 class YouTube(object):
     @staticmethod
     # Authorize the request and store authorization credentials.
-    def get_authenticated_service():
+    def get_authenticated_service_new():
         flow = InstalledAppFlow.from_client_secrets_file(
             CLIENT_SECRETS_FILE, SCOPES)
         credentials = flow.run_console()
         return build(API_SERVICE_NAME, API_VERSION, credentials=credentials)
+    def get_authenticated_service(init=False):
+        flow = flow_from_clientsecrets("application_secrets.json",
+                                       scope=SCOPES,
+                                       message=MISSING_CLIENT_SECRETS_MESSAGE)
 
+        storage = Storage("user_oauth2.json")
+        credentials = storage.get()
+        if init and (credentials is None or credentials.invalid):
+            args = argparser.parse_args(["--noauth_local_webserver"])
+            credentials = run_flow(flow, storage, args)
+
+        return build(API_SERVICE_NAME, API_VERSION,
+                     http=credentials.authorize(httplib2.Http()))
     @staticmethod
     def lt(datetime):
         # return pytz.timezone('America/Los_Angeles').localize(datetime)
@@ -88,11 +119,11 @@ class YouTube(object):
 
     @staticmethod
     def list_stream_health():
+        logger.info("---------------Calling YouTube---------------")
         response = YouTube.get_authenticated_service().liveStreams().list(
             part="id,snippet,status",
             mine=True,
             maxResults=50).execute()
-        print("here---------------")
         results = []
         for stream in response.get("items", []):
             results.append({
@@ -100,7 +131,7 @@ class YouTube(object):
                 'status': stream["status"]["streamStatus"],
                 'health': stream["status"]["healthStatus"]['status']
             })
-            results.sort()
+            # results.sort()
         return results
 
     @staticmethod
@@ -256,6 +287,9 @@ class Room(models.Model):
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)
         logger.debug("Room init called")
+
+    def __str__(self):
+        return self.name
 
     def dnsname(self):
         return self.name.lower().replace(" ", "-")
@@ -533,6 +567,9 @@ class Talk(models.Model):
     broadcast_id = models.CharField(max_length=64, default="", blank=True)
 
     def __unicode__(self):
+        return self.title
+
+    def __str__(self):
         return self.title
 
     def clean(self):
