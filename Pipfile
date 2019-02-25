@@ -1,0 +1,32 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+pep8 = "*"
+django = "==2.1.5"
+django-fsm = "*"
+google-api-python-client = "*"
+django-json-response = "*"
+wakeonlan = "*"
+mysqlclient = "*"
+django-tastypie = "*"
+daemon-py = {git = "https://github.com/socallinuxexpo/daemon-py.git",editable = true}
+pytest-django = "*"
+django-bootstrap4 = "*"
+google-auth = "*"
+google-auth-oauthlib = "*"
+google-auth-httplib2 = "*"
+coverage = "*"
+django-nose = "*"
+django-coverage = "*"
+django-extensions = "*"
+oauth2client = "*"
+pyyaml = "*"
+logstash-formatter = "*"
+
+[requires]
+python_version = "3.6"
