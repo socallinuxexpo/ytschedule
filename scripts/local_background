@@ -1,16 +1,8 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
-import sys, os, datetime, pytz
+import sys, os, datetime
 from daemon import Daemon
 from utils.background import YtScheduleBG
-from django.db.models import Q
-import django_fsm
-
-path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
-rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
-sys.path.append(path)
-
-from room.models import *
 
 class LocalBackground(YtScheduleBG):
   def work(self):
@@ -69,6 +61,6 @@ class LocalBackground(YtScheduleBG):
           logging.error("Promblem in room loop: %s" % e)
 
 if __name__ == "__main__":
-  os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ytschedule.settings.production")
-  daemon = LocalBackground( os.path.join(rundir, "%s.pid" % os.path.basename(__file__)) )
-  daemon.process_cmd(sys.argv)
+    rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
+    daemon = LocalBackground( os.path.join(rundir, "%s.pid" % os.path.basename(__file__)) )
+    daemon.process_cmd(sys.argv)

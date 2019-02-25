@@ -7,7 +7,6 @@ import time, pytz
 import logging
 from logstash_formatter import LogstashFormatterV1
 import datetime
-import django
 from daemon import Daemon
 
 
@@ -15,8 +14,6 @@ path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../run'))
 sys.path.append(path)
 os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings.production"
-
-from room.models import Room, Talk
 
 class YtScheduleBG(Daemon):
   is_daemon=False
@@ -29,7 +26,11 @@ class YtScheduleBG(Daemon):
     Daemon.__init__(self, *args, **kwargs)
     self.__class__.__name__ = os.path.basename(sys.argv[0])
     self.tz = pytz.timezone(self.TIME_ZONE)
+    import django
+    from django.conf import settings
+    # settings.configure()
     django.setup()
+    from room.models import Room, Talk
 
   def run(self): #Define what tasks/processes to daemonize
     self.config()
@@ -53,7 +54,7 @@ class YtScheduleBG(Daemon):
   def config(self):
     logging.debug("YtScheduleBG config method.")
     filename = os.path.abspath(os.path.join(path, "%s.yml"%self.__class__.__name__))
-    print filename
+    logging.debug("opening filename: %s" % filename)
     if not os.path.isfile(filename):
       filename = "/etc/ytscheduler/%s.yml" % self.__class__.__name__
     if os.path.isfile(filename):
@@ -64,14 +65,14 @@ class YtScheduleBG(Daemon):
       logging.error("Could not find file %s" % filename)
       exit(-3)
 
-      
+
   def work_loop(self):
     while True:
       logging.debug("Debug message")
       logging.info("Info message")
       #logging.warn("Warning message")
       #logging.error("Error message (%s)" % datetime.datetime.now())
-      
+
       loop_start = datetime.datetime.now(self.tz)
       self.work()
       nexttime = loop_start+datetime.timedelta(seconds=self.SLEEP_TIME)
@@ -79,11 +80,11 @@ class YtScheduleBG(Daemon):
       logging.debug("Now: %s, Target: %s, Diff: %s" % (loop_start, nexttime, diff))
       if diff > 0:
         time.sleep( diff )
-  
+
   def work(self):
-    print "background"
-    print SUPPORTED_SERVICES
-  
+    print("background")
+    print(SUPPORTED_SERVICES)
+
   def process_cmd(self, argv):
     if len(argv) == 2:
       if 'start' == argv[1]:
