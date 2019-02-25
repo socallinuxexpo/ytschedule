@@ -16,6 +16,7 @@ class RoomResource(ModelResource):
       'end_time': ["exact", "lt", "lte", "gte", "gt"],
     }
     excludes = ['ingestion_address', 'backup_address']
+    cache = SimpleCache(timeout=10)
 
 class Stream():
   def __init__(self, dictionary):
@@ -33,7 +34,7 @@ class StreamResource(Resource):
       allowed_methods = ['get']
       always_return_data = True
       limit = 50
-      cache = SimpleCache(timeout=60)
+      cache = SimpleCache(timeout=10)
 
     def detail_uri_kwargs(self, bundle_or_obj):
       kwargs = {}
@@ -47,12 +48,10 @@ class StreamResource(Resource):
     def get_object_list(self, request):
         results = []
         streams = YouTube.list_stream_health()
-        
+
         for result in streams:
-          results.append(Stream(result) )
+          results.append(Stream(result))
         return results
 
     def obj_get_list(self, bundle, **kwargs):
       return self.get_object_list(bundle.request)
-
-
