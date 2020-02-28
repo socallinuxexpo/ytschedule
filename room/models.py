@@ -3,11 +3,10 @@ import logging
 import datetime
 import httplib2
 import subprocess
-# import yaml
-# import pytz
 import os
 import sys
 import pprint
+import pytz
 import wakeonlan as wol
 from django_fsm import FSMField, transition
 from django.core.exceptions import ValidationError
@@ -118,6 +117,15 @@ class YouTube(object):
         return response
 
     @staticmethod
+    def check_channel():
+        # Status Must be active, all, completed, or upcoming
+        response = YouTube.get_authenticated_service().channels().list(
+          mine=True,
+          part="snippet"
+        ).execute()
+        return response
+
+    @staticmethod
     def list_stream_health():
         logger.info("---------------Calling YouTube---------------")
         response = YouTube.get_authenticated_service().liveStreams().list(
@@ -223,7 +231,7 @@ class YouTube(object):
         retcode = 1
         try:
             logging.debug("Executing: [%s]" % command)
-            # retcode = call(command, shell=True)
+            retcode = subprocess.call(command, shell=True)
             if retcode < 0:
                 logging.error("Child was terminated by signal %i" % -retcode)
             else:
@@ -232,6 +240,23 @@ class YouTube(object):
             logging.error("Execution failed: %s" % e)
             return True
         return False
+
+    @staticmethod
+    def unlock_service(service_name):
+        # open("/etc/init/{}.override".format(service_name), 'w').close()
+        cammand = "echo '' | sudo tee /etc/init/{}.override > /dev/null".format(service_name)
+        YouTube.runcmd(cammand)
+
+    @staticmethod
+    def lock_service(service_name):
+        # open("/etc/init/{}.override".format(service_name), 'w').write("manual").close()
+        cammand = "echo manual | sudo tee /etc/init/{}.override > /dev/null".format(service_name)
+
+    @staticmethod
+    def run_service(service_name, arg):
+        # open("/etc/init/{}.override".format(service_name), 'w').write("manual").close()
+        cammand = "sudo service {} {}".format(service_name, arg)
+        YouTube.runcmd(cammand)
 
 
 class Room(models.Model):
@@ -283,13 +308,15 @@ class Room(models.Model):
     is_streaming = models.BooleanField(default=True)
     hostname = models.CharField(max_length=128, default="", blank=True)
     mac_address = models.CharField(max_length=64, default="", blank=True)
+    is_dual_stream = models.BooleanField(default=False)
+    save_camera = models.BooleanField(default=False)
 
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)
         logger.debug("Room init called")
 
     def __str__(self):
-        return self.name
+        return self.title
 
     def dnsname(self):
         return self.name.lower().replace(" ", "-")
@@ -313,7 +340,7 @@ class Room(models.Model):
 
     @transition(field=state, source='stream_created',
                 target='published', conditions=[can_publish])
-    def publish(self):
+    def publish(self, privacy="unlisted"):
         logger.debug("Creating Live Broadcast for Room %s" % self.title)
         try:
             youtube = YouTube.get_authenticated_service()
@@ -324,10 +351,10 @@ class Room(models.Model):
                         title=self.title,
                         scheduledStartTime=self.start_time.isoformat(),
                         scheduledEndTime=self.end_time.isoformat(),
-                        description=self.description,
+                        description=self.complete_description(),
                     ),
                     status=dict(
-                        privacyStatus='public'  # public, private, or unlisted
+                        privacyStatus=privacy  # public, private, or unlisted
                     )
                 )
             ).execute()
@@ -369,7 +396,7 @@ class Room(models.Model):
                         title=self.title,
                         scheduledStartTime=self.start_time.isoformat(),
                         scheduledEndTime=self.end_time.isoformat(),
-                        description=self.description,
+                        description=self.complete_description(),
                     ),
                     status=dict(
                         privacyStatus='public'  # public, private, or unlisted
@@ -428,6 +455,7 @@ class Room(models.Model):
         if check:
             stream = YouTube.find_stream_by_title(
                 "%s_%s" % (self.dnsname(), self.cdn_format))
+
         if stream is None:
             try:
                 youtube = YouTube.get_authenticated_service()
@@ -515,11 +543,30 @@ class Room(models.Model):
     def __unicode__(self):
         return self.title
 
+    def complete_description(self):
+        description = ""
+        query = CommonDescription.objects.filter(link_type="room")
+        query = query.filter(link_subtype="beginning")
+        if len(query) > 0:
+          for result in query:
+              description += result.description
+              description += "\n"
+        description += self.description
+        description += "\n"
+        query = CommonDescription.objects.filter(link_type="room")
+        query = query.filter(link_subtype="end")
+        if len(query) > 0:
+          for result in query:
+              description += result.description
+              description += "\n"
+        return description
+
     def update_description(self):
         talks = Talk.objects.filter(room=self)
-        desc = "SCaLE is the largest community-run open-source and free " \
-               "software conference in North America. It is held annually in" \
-               " Los Angeles.\n"
+        desc = ""
+        # desc = "SCaLE is the largest community-run open-source and free " \
+        #        "software conference in North America. It is held annually in" \
+        #        " Los Angeles.\n"
         for talk in talks:
             diff = (talk.start_time-self.start_time).seconds
             diff += 300
@@ -534,13 +581,41 @@ class Room(models.Model):
             seconds = (diff % 3600) % 60
             if seconds > 0:
                 link += "%is" % seconds
-            desc += "%s to %s: %s: %s \n" % (YouTube.lt(talk.start_time).
-                                             strftime('%I:%M %p'),
-                                             YouTube.lt(talk.end_time).
-                                             strftime('%I:%M %p %Z'),
-                                             talk.title, talk.talk_url)
-        desc += "Southern Californa Linux Expo: " \
-                "https://www.socallinuxexpo.org/scale/16x\n"
+            desc += "<a href=\"{}\">{}</a> to {}: <a href=\"{}\">{}</a><br/>\n".format(link,
+                            YouTube.lt(talk.start_time).strftime('%I:%M %p'),
+                            YouTube.lt(talk.end_time).strftime('%I:%M %p %Z'),
+                            talk.talk_url, talk.title)
+        # desc += "Southern Californa Linux Expo: " \
+        #         "https://www.socallinuxexpo.org/scale/16x\n"
+        self.description = desc
+        self.save()
+
+    def update_description2(self):
+        talks = Talk.objects.filter(room=self)
+        desc = ""
+        # desc = "SCaLE is the largest community-run open-source and free " \
+        #        "software conference in North America. It is held annually in" \
+        #        " Los Angeles.\n"
+        for talk in talks:
+            diff = (talk.start_time-self.start_time).seconds
+            diff += 300
+
+            link = "#t="
+            hours = diff/3600
+            if hours > 0:
+                link += "%ih" % hours
+            minutes = diff % 3600/60
+            if minutes > 0:
+                link += "%im" % minutes
+            seconds = (diff % 3600) % 60
+            if seconds > 0:
+                link += "%is" % seconds
+            desc += "{} to {}: {}\n".format(
+                            YouTube.lt(talk.start_time).strftime('%I:%M %p'),
+                            YouTube.lt(talk.end_time).strftime('%I:%M %p %Z'),
+                            talk.talk_url, talk.title)
+        # desc += "Southern Californa Linux Expo: " \
+        #         "https://www.socallinuxexpo.org/scale/16x\n"
         self.description = desc
         self.save()
 
@@ -555,7 +630,7 @@ class Talk(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(max_length=1024)
     talk_url = models.CharField(max_length=256, default="", blank=True)
-    speaker_name = models.CharField(max_length=64, default="", blank=True)
+    speaker_name = models.CharField(max_length=256, default="", blank=True)
     speaker_url = models.CharField(max_length=256, default="", blank=True)
     state = FSMField(default='created')
     start_time = models.DateTimeField('start time')
@@ -575,7 +650,7 @@ class Talk(models.Model):
     def clean(self):
         # start before end
         if self.start_time >= self.end_time:
-            raise ValidationError(_('Must Start before End and have length.'))
+            raise ValidationError(_('Must Start before End and have "length.'))
 
     def publish(self):
         logger.debug("Creating Live Broadcast for Talk %s" % self.title)
@@ -660,4 +735,7 @@ class CommonDescription(models.Model):
     description = models.TextField(max_length=1024)
 
     def __unicode__(self):
+        return self.link_type + "_" + self.link_subtype
+
+    def __str__(self):
         return self.link_type + "_" + self.link_subtype

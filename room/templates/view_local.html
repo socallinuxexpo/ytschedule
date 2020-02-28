@@ -1,0 +1,160 @@
+<html ng-app="streamPoll">
+<head>
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
+<script src="http://cdn.jsdelivr.net/restangular/1.1.3/restangular.min.js"></script>
+<script src="http://cdn.jsdelivr.net/underscorejs/1.5.1/underscore-min.js"></script>
+
+<script type="text/javascript">
+var streamPoll = angular.module('streamPoll',["restangular"]);
+
+streamPoll.controller('MainCtrl', ["Restangular","$scope","$timeout",function(Restangular,$scope, $timeout) {
+   $scope.loads = 1;
+   $scope.atTime = new Date();
+   var resource = Restangular.all('api/v1/room/');
+   resource.getList().then(function(streams){
+     $scope.streams = streams.objects;
+   });
+    var poll = function() {
+        $timeout(function() {
+            $scope.loads++;
+            $scope.atTime = new Date();
+            var resource = Restangular.all('api/v1/room/');
+            resource.getList().then(function(streams){
+              $scope.streams = streams.objects;
+            });
+            poll();
+        }, 10000);
+    };
+   poll();
+}]);
+var clockPoll = angular.module('streamPoll');
+
+clockPoll.controller('clock', ["$scope","$timeout",function($scope, $timeout) {
+   $scope.atTime = new Date();
+   // resource.getList().then(function(streams){
+   //   $scope.streams = streams.objects;
+   // });
+    var poll = function() {
+        $timeout(function() {
+            $scope.atTime = new Date();
+            // resource.getList().then(function(streams){
+            //   $scope.streams = streams.objects;
+            // });
+            poll();
+        }, 1000);
+    };
+   poll();
+}]);
+</script>
+<style>
+body {
+    display: block;
+    margin: 0px;
+}
+div.time {width: 100%; text-align: center; font-size: xx-large; z-index: 10; 
+  position: absolute;
+  top: 0;}
+:root {
+    // We just need to know these 3 values up front:
+    --gutter: 10px;
+    --wrapper: calc(100vw - ( 2 * var(--gutter)));
+    
+    --noOfColumns: 3;
+    
+    // Number of gutters is columns minus 1:
+    --noOfGutters: calc(var(--noOfColumns) - 1);
+    
+    // Aspect ratio goes here:
+    --ratioA: 16;
+    --ratioB: 9;
+    
+    // Use the aspect ratio to calculate the factor for multiplication:
+    --factor: calc(var(--ratioB) / var(--ratioA));
+    
+    // Calculating the row height:
+    --rh: calc(( (var(--wrapper) - (var(--noOfGutters) * var(--gutter))) 
+        / var(--noOfColumns)) * var(--factor));
+    
+    @media (min-width: 60em) {
+        --wrapper: 60em;
+        --gutter: 20px;
+        --noOfColumns: 4;
+        --ratioA: 16;
+        --ratioB: 9;
+    }
+}
+
+.grid {
+    height: 100%;
+    max-width: var(--wrapper);
+    display: grid;
+    grid-template-columns: repeat(var(--noOfColumns), minmax(0, 1fr));
+    grid-auto-flow: dense;
+    grid-auto-rows: minmax(var(--rh), auto); // If the content is taller then the box will grow to fit. This is only going to work if the column value is 1fr
+    grid-gap: var(--gutter);
+    margin: var(--gutter);
+    
+    @media (min-width: 60em) {
+        margin: var(--gutter) auto;
+    }
+}
+.wrapper {
+    border: none;
+    height: 100%;
+}
+
+.wrapper > div {
+    border-radius: 0px;
+    padding: 0px;
+    margin: 0px;
+    width: 100%;
+    background-size: 100%;
+}
+
+.wrapper {
+  display: grid;
+  grid-gap: 0px;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.wrapper2 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 10px;
+}
+
+.wrapper2 > div {
+    border: 2px solid #ffffff;
+    border-radius: 5px;
+    padding: 0px;
+    margin: 0px;
+    width: 100%;
+    background-size: 100%;
+}
+
+</style>
+</head>
+
+<body>
+{% verbatim %}
+<div data-ng-controller="clock" class="time">{{ atTime.toTimeString() }}</div>
+<div class="grid">
+<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+
+<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+
+<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+
+<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+</div>
+{% endverbatim %}
+</body>
+</html>

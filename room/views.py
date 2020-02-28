@@ -11,3 +11,10 @@ def index(request):
     template = loader.get_template('index.html')
     context = { }
     return HttpResponse(template.render(context, request))
+
+def view(request):
+    template = loader.get_template('view_local.html')
+    context = { }
+    return HttpResponse(template.render(context, request))
+
+

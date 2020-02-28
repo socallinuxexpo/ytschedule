@@ -5,7 +5,7 @@ This application manages Youtube Live Streams for all day Confrence supporting m
 #### Requires
 Python
 ```bash
-apt-get install python-yaml
+apt-get install python-yaml libmysqlclient-dev
 
 pip install pipenv
 ```

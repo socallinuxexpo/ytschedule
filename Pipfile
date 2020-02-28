@@ -27,6 +27,8 @@ django-extensions = "*"
 oauth2client = "*"
 pyyaml = "*"
 logstash-formatter = "*"
+django-configurations = "*"
+iso8601 = "*"
 
 [requires]
 python_version = "3.6"
