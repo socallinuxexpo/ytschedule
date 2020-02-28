@@ -36,7 +36,10 @@ def run():
 
   print("Room Start=%s" % start_time)
   print("Room End=  %s" % end_time)
-  room = Room(title="Room_%s"%now.strftime("%m%d"), name=room_name, start_time=start_time, end_time=end_time)
+  room = Room(title="Room_%s"%now.strftime("%m%d"),
+                name=room_name,
+                start_time=start_time,
+                end_time=end_time)
   room.save()
 
   talk_length = 60*60*DAY_LENGTH/8
@@ -47,8 +50,9 @@ def run():
     talk_start = start_time + datetime.timedelta(0,talk_length*index)
     talk_end = start_time + datetime.timedelta(0,talk_length*index+talk_length)
     print("Talk Start=%s" % talk_start)
-    print("Talk End=  %s" % talk_end)
+    print("Talk End=%s" % talk_end)
     talk = Talk(room_id=room.id, title=title,
                 start_time=talk_start, end_time=talk_end,
-                description="Description for: %s"%title)
+                description="Description for: %s"%title,
+                talk_url="https://www.socallinuxexpo.org/scale/17x/schedule/")
     talk.save()

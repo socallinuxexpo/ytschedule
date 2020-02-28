@@ -1,6 +1,9 @@
 import sys, os
 from daemon import Daemon
 from utils.background import YtScheduleBG
+from room.models import *
+from django.db.models import Q
+import django_fsm
 
 class CenteralBackground(YtScheduleBG):
   def work(self):

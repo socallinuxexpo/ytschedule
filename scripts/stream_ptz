@@ -3,13 +3,13 @@
 
 #this test pipe line should provide data from snp-6200 to gst-switch
 #ipaddress=$1
-ipaddress=ballroom-b-cam.scaleav.us
-ident=southern-califo-0973.zqz2-bvt2-ztqf-barb
+ipaddress=ballroom-c-cam.scaleav.us
+ident=eb73-t6cm-dexy-cakv
 
 gst-launch-1.0 -v -m rtspsrc location=rtsp://${ipaddress}/1 latency=0 ntp-sync=true is-live=true do-timestamp=true name=camera \
   videotestsrc pattern=smpte is-live=true ! video/x-raw,width=1920,height=1080 ! \
   queue ! $overlay \
-  vaapiencode_h264 bitrate=5000 keyframe-period=60 max-bframes=0 cabac=true rate-control=2 ! \
+  vaapih264enc bitrate=5000 keyframe-period=60 max-bframes=0 cabac=true rate-control=2 ! \
   "video/x-h264,stream-format=avc,profile=main" ! \
   queue ! mux. \
   flvmux streamable=true name=mux ! queue ! \

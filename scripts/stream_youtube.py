@@ -13,7 +13,7 @@ class Streamer():
   playing=True
   def __init__(self):
     # Create GStreamer pipeline
-    stream_id = "mproctor13.w1x1-5akr-ghfm-2kcp"
+    stream_id = "eb73-t6cm-dexy-cakv"
     launch ="flvmux streamable=true name=mux ! queue ! "
     launch +="rtmpsink location=\"rtmp://a.rtmp.youtube.com/live2/x/%s?videoKeyframeFrequency=1&totalDatarate=5128 "  % stream_id
     launch +="flashVer=\\\"FME/3.0%%20(compatible;%%20FMSc%201.0)\\\" swfUrl=rtmp://a.rtmp.youtube.com/live2\" "
@@ -26,7 +26,7 @@ class Streamer():
     if False:
       launch +="queue ! clockoverlay text=\"Generated at: \" auto-resize=true font-desc=\"Sans, 42\" "
       launch +="time-format=\"%m/%d/%Y %H:%M:%S\" halignment=center valignment=center ! "
-    launch +="vaapiencode_h264 bitrate=3000 keyframe-period=60 max-bframes=0 cabac=true rate-control=2 ! "
+    launch +="vaapih264enc bitrate=3000 keyframe-period=60 max-bframes=0 cabac=true rate-control=2 ! "
     launch +="capsfilter caps=\"video/x-h264,stream-format=avc,profile=main\" ! h264parse ! "
     launch +="queue ! mux. "
     print(launch) 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Unit test/basic Daemon-Python implementation
+basic Daemon-Python implementation
 """
 import sys, os, yaml
 import time, pytz
@@ -8,12 +8,21 @@ import logging
 from logstash_formatter import LogstashFormatterV1
 import datetime
 from daemon import Daemon
-
+import django
+from django.conf import settings
+from django.apps import apps
 
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../run'))
 sys.path.append(path)
-os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings.production"
+
+import ytschedule.settings
+os.environ.setdefault(
+    "DJANGO_SETTINGS_MODULE",
+    "ytschedule.settings.production"
+)
+import ytschedule.settings.production
+apps.populate(settings.INSTALLED_APPS)
 
 class YtScheduleBG(Daemon):
   is_daemon=False
@@ -24,7 +33,7 @@ class YtScheduleBG(Daemon):
 
   def __init__(self, *args, **kwargs):
     Daemon.__init__(self, *args, **kwargs)
-    self.__class__.__name__ = os.path.basename(sys.argv[0])
+    self.__class__.__name__ = os.path.splitext(os.path.basename(sys.argv[0]))[0]
     self.tz = pytz.timezone(self.TIME_ZONE)
     import django
     from django.conf import settings
@@ -61,6 +70,7 @@ class YtScheduleBG(Daemon):
       logging.info("Loading config file %s" % filename)
       with open(filename, 'r') as stream:
         self.configuration = yaml.load(stream)
+      logging.debug("Staring backend for: [{}]".format(self.configuration['room_name']))
     else:
       logging.error("Could not find file %s" % filename)
       exit(-3)
@@ -69,7 +79,7 @@ class YtScheduleBG(Daemon):
   def work_loop(self):
     while True:
       logging.debug("Debug message")
-      logging.info("Info message")
+      # logging.info("Info message")
       #logging.warn("Warning message")
       #logging.error("Error message (%s)" % datetime.datetime.now())
 

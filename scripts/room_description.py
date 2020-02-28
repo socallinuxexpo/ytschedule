@@ -23,9 +23,11 @@ def run(*args):
 
     for room in rooms:
         print("[%i]%s -- %s" % (room.id, room.title, room.state))
-        room.create_stream()
-        print("Room {} Stream Created.".format(room.id))
-        # room.publish(privacy)
+        # room.create_stream()
+        # print("Room {} Stream Created.".format(room.id))
+        # room.publish(privacy)()
+        room.update_description2()
+        print("\n\n{}\n\n".format(room.complete_description()))
 
     #    talks = Talk.objects.filter(room=room)
     #    for talk in talks:

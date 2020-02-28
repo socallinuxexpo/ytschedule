@@ -3,6 +3,9 @@
 import sys, os, datetime
 from daemon import Daemon
 from utils.background import YtScheduleBG
+from room.models import *
+from django.db.models import Q
+import django_fsm
 
 class LocalBackground(YtScheduleBG):
   def work(self):
@@ -23,19 +26,31 @@ class LocalBackground(YtScheduleBG):
               result.set_live()
               logging.debug("Set liveStream to Live.")
             else:
-              YouTube.runcmd("sudo service youtube_1080 start")
+              YouTube.unlock_service("youtube_1080")
+              YouTube.run_service("youtube_1080", "start")
+              if result.save_camera:
+                YouTube.unlock_service("savecamera")
+                YouTube.run_service("savecamera", "start")
           elif minutes < 60 and result.state == "published":
             if bcast_status == "ready":
               result.set_testing()
               logging.debug("Set liveStream to Testing.")
             else:
-              YouTube.runcmd("sudo service youtube_1080 start")
+              YouTube.unlock_service("youtube_1080")
+              YouTube.run_service("youtube_1080", "start")
+              if result.save_camera:
+                YouTube.unlock_service("savecamera")
+                YouTube.run_service("savecamera", "start")
           elif (result.end_time-now).total_seconds()/60 < -20 and result.state == "live":
             logging.debug("Set liveStream to Complete.")
             result.set_complete()
           elif (result.end_time-now).total_seconds()/60 < -20 and result.state == "completed":
             logging.debug("Stop youtube streamer.")
-            YouTube.runcmd("sudo service youtube_1080 stop")
+            YouTube.run_service("youtube_1080", "stop")
+            YouTube.lock_service("youtube_1080")
+            if result.save_camera:
+              YouTube.run_service("savecamera", "stop")
+              YouTube.lock_service("savecamera")
 
           q = Talk.objects.filter(room=result)
           q = q.filter(start_time__lte=now+datetime.timedelta(seconds=5*60))

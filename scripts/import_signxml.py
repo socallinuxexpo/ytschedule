@@ -1,28 +1,33 @@
-#!/usr/bin/python
-
+from room.models import *
 import datetime
 import pytz
 import iso8601
 from xml.etree.ElementTree import Element, SubElement, dump, parse, tostring, fromstring
 import os, sys
 import django
-#from daemon import Daemon
-
-rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
-
-path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
-sys.path.append(path)
-os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings.production"
-
-from room.models import *
 
 TIME_ZONE ='America/Los_Angeles'
-
 tz = pytz.timezone(TIME_ZONE)
+from html.parser import HTMLParser
 
-if __name__ == "__main__":
-  django.setup()
-
+class MyParser(HTMLParser):
+    def __init__(self):
+        self.reset()
+        self.strict = False
+        self.convert_charrefs= True
+        self.start_text=""
+        self.end_text=""
+    def handle_starttag(self, tag, attrs):
+        for attr in attrs:
+            if 'date-display-start' in attr:
+                for attr2 in attrs:
+                    if 'content' in attr2:
+                        self.start_text = attr2[1]
+            if 'date-display-end' in attr:
+                for attr2 in attrs:
+                    if 'content' in attr2:
+                        self.end_text = attr2[1]
+def run(*args):
   logger = logging.getLogger()
   logger.setLevel(logging.WARNING)
 
@@ -32,18 +37,18 @@ if __name__ == "__main__":
   ch.setFormatter(formatter)
   logger.addHandler(ch)
 
-  if len(sys.argv) > 1:
-    xml_filename = sys.argv[1]
+  if len(args) > 0:
+    xml_filename = args[0]
   else:
     xml_filename = "example_data/sign.xml"
 
-  if len(sys.argv) > 2:
-    base_url = sys.argv[2]
+  if len(args) > 1:
+    base_url = args[1]
   else:
     base_url = "https://www.socallinuxexpo.org"
 
   if not os.path.isfile(xml_filename):
-    logger.error("File %s does not exist." % xml_filename)
+    logger.error("File [{}] does not exist.".format(xml_filename))
     exit(-1)
 
 
@@ -51,21 +56,22 @@ if __name__ == "__main__":
   rooms = {}
 
   for node in root:
-    start = fromstring(node.findtext("Time")).findall("span")[0].get("content")
-    end = fromstring(node.findtext("Time")).findall("span")[1].get("content")
-    start_time = iso8601.parse_date(start)
-    end_time = iso8601.parse_date(end)
+    time_parse = MyParser()
+    time_parse.feed(node.findtext("Time"))
+
+    start_time = iso8601.parse_date(time_parse.start_text)
+    end_time = iso8601.parse_date(time_parse.end_text)
     roomname = node.findtext("Room")
-    comp = u"%s %s"%(roomname,start_time.strftime('%A %b. %d - SCaLE 16x'))
+    comp = "%s %s"%(roomname,start_time.strftime('%A %b. %d - SCaLE 17x'))
 
     q = Room.objects.filter(title=comp)
     if len(q) == 0:
-      #print "not found"
+      logger.debug("not found")
       room_obj = Room(name=roomname, title=comp, start_time=start_time, end_time=end_time)
       room_obj.save()
     else:
-      #print "found"
       room_obj = q[0]
+      logger.debug("found [{}]".format(room_obj))
     #print room.start_time.astimezone(tz)
     # Handle room
     if comp in rooms.keys():
@@ -86,8 +92,9 @@ if __name__ == "__main__":
         talk = Talk(room_id=room_obj.id, title=title, start_time=start_time, end_time=end_time)
     else:
       talk = q[0]
-      if topic != "BoFs":
+      if topic == "BoFs":
         talk.delete()
+        print("delete talk: {}".format(talk))
     if topic != "BoFs":
       talk.start_time = start_time
       talk.end_time = end_time
@@ -96,14 +103,10 @@ if __name__ == "__main__":
       talk.speaker_name = node.findtext("Speakers")
       talk.save()
 
-
-
-
+  print("Updating Rooms: ")
   for room in rooms:
-    #add room
-    print "%s: %s <--> %s" %(room, rooms[room]["start"], rooms[room]["end"])
+    print("{}: {} <--> {}".format(room, rooms[room]["start"], rooms[room]["end"]))
     room_obj = Room.objects.filter(title=room)[0]
-    print room_obj
     room_obj.start_time=rooms[room]["start"]
     room_obj.end_time=rooms[room]["end"]
     room_obj.save()

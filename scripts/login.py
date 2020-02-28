@@ -11,3 +11,6 @@ from room.models import *
 
 def run():
     response = YouTube.get_authenticated_service(init=True)
+    result = YouTube.check_channel()
+    print("Logged Into: [{}]".format(result.get('items')[0]['snippet']['title']))
+    # print(result['snippet'])
