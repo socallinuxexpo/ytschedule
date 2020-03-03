@@ -610,10 +610,10 @@ class Room(models.Model):
             seconds = (diff % 3600) % 60
             if seconds > 0:
                 link += "%is" % seconds
-            desc += "{} to {}: {}\n".format(
+            desc += "{} to {}: {} {}\n".format(
                             YouTube.lt(talk.start_time).strftime('%I:%M %p'),
                             YouTube.lt(talk.end_time).strftime('%I:%M %p %Z'),
-                            talk.talk_url, talk.title)
+                            talk.title, talk.talk_url)
         # desc += "Southern Californa Linux Expo: " \
         #         "https://www.socallinuxexpo.org/scale/16x\n"
         self.description = desc
@@ -640,7 +640,8 @@ class Talk(models.Model):
         default=datetime.datetime.now(),
         blank=True)
     broadcast_id = models.CharField(max_length=64, default="", blank=True)
-
+    streamable = models.BooleanField(default=True)
+    recordable = models.BooleanField(default=True)
     def __unicode__(self):
         return self.title
 

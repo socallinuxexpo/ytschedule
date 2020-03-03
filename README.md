@@ -32,6 +32,11 @@ Go to: https://console.developers.google.com/apis/credentials
 4. click ok
 5. Then click on the download button and save application_secrets.json in your working directory.
 
+# Log app in to Youtube
+```bash
+python manage.py runscript login
+```
+Then go to the output url login and then past answer back into cli
 
 # Populate data
 Use fake data or signs method.
@@ -45,6 +50,7 @@ download signs.xml from SCALE website then run:
 ```bash
 python manage.py runscript import_signxml
 ```
+
 # Try the admin interface
 ```bash
 python manage.py runserver

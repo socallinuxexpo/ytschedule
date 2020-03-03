@@ -36,7 +36,7 @@ def run(*args):
   formatter = logging.Formatter('%(levelname)s - %(message)s')
   ch.setFormatter(formatter)
   logger.addHandler(ch)
-
+  print(args)
   if len(args) > 0:
     xml_filename = args[0]
   else:
@@ -62,7 +62,7 @@ def run(*args):
     start_time = iso8601.parse_date(time_parse.start_text)
     end_time = iso8601.parse_date(time_parse.end_text)
     roomname = node.findtext("Room")
-    comp = "%s %s"%(roomname,start_time.strftime('%A %b. %d - SCaLE 17x'))
+    comp = "%s %s"%(roomname,start_time.strftime('%A %b. %d - SCaLE 18x'))
 
     q = Room.objects.filter(title=comp)
     if len(q) == 0:

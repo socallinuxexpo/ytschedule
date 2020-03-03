@@ -47,7 +47,8 @@ class StreamResource(Resource):
 
     def get_object_list(self, request):
         results = []
-        streams = YouTube.list_stream_health()
+        streams = []
+        #streams = YouTube.list_stream_health()
 
         for result in streams:
           results.append(Stream(result))
