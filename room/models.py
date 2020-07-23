@@ -500,6 +500,11 @@ class Room(models.Model):
         else:
             return False
 
+    @transition(field=state, source=['published', 'error', 'planned'], target='testing')
+    def set_testing_offline(self):
+        self.state = 'testing'
+        self.save()
+
     @transition(field=state,
                 source='published',
                 target='testing',
@@ -508,10 +513,17 @@ class Room(models.Model):
         if self.stream_active():
             status_response = YouTube.set_broadcast_status(
                 self.broadcast_id, 'testing')
-            self.state = 'testing'
-            self.save()
+            self.set_testing_offline()
         else:
             logger.error("Stream [%s] is not ready!" % self.youtube_id)
+
+    @transition(field=state,
+                source=['testing', 'published'],
+                target='live',
+                conditions=[stream_active])
+    def set_live_offline(self):
+       self.state = 'live'
+       self.save()
 
     @transition(field=state,
                 source=['testing', 'published'],
@@ -521,10 +533,16 @@ class Room(models.Model):
         if self.stream_active():
             status_response = YouTube.set_broadcast_status(
                 self.broadcast_id, 'live')
-            self.state = 'live'
-            self.save()
+            self.set_live_offline()
         else:
             logger.error("Stream [%s] is not ready!" % self.youtube_id)
+
+    @transition(field=state,
+                source=['testing', 'live', 'published', 'error'],
+                target='complete')
+    def set_complete_offline(self):
+        self.state = 'complete'
+        self.save()
 
     @transition(field=state,
                 source=['testing', 'live', 'published', 'error'],
@@ -532,8 +550,7 @@ class Room(models.Model):
     def set_complete(self):
         status_response = YouTube.set_broadcast_status(
             self.broadcast_id, 'complete')
-        self.state = 'complete'
-        self.save()
+        self.set_complete_offline()
 
     def start_stream(self):
         print("start stream")
@@ -693,35 +710,47 @@ class Talk(models.Model):
                          (e.resp.status, e.content))
             self.save()
 
+    @transition(field=state, source=['published', 'error', 'planned'], target='testing')
+    def set_testing_offline(self):
+        self.state = 'testing'
+        self.save()
+
     @transition(field=state, source=['published'], target='testing')
     def set_testing(self):
         if self.room.stream_active():
             status_response = YouTube.set_broadcast_status(
                 self.broadcast_id,
                 'testing')
-            self.state = 'testing'
-            self.save()
+            self.set_testing_offline()
         else:
             logger.error("Stream [%s] is not ready!" % self.broadcast_id)
 
+    @transition(field=state, source=['testing'], target='live')
+    def set_live_offine(self):
+        self.state = 'live'
+        self.save()
+    
     @transition(field=state, source=['testing'], target='live')
     def set_live(self):
         if self.room.stream_active():
             status_response = YouTube.set_broadcast_status(
                 self.broadcast_id,
                 'live')
-            self.state = 'live'
-            self.save()
+            self.set_live_offine()
         else:
             logger.error("Stream [%s] is not ready!" % self.broadcast_id)
+
+    @transition(field=state, source=['live'], target='complete')
+    def set_complete_offline(self):
+        self.state = 'complete'
+        self.save()
 
     @transition(field=state, source=['live'], target='complete')
     def set_complete(self):
         status_response = YouTube.set_broadcast_status(
             self.broadcast_id,
             'complete')
-        self.state = 'complete'
-        self.save()
+        self.set_complete_offline()
 
 
 class CommonDescription(models.Model):
