@@ -5,7 +5,7 @@ This application manages Youtube Live Streams for all day Confrence supporting m
 #### Requires
 Python
 ```bash
-apt-get install python-yaml libmysqlclient-dev
+apt-get install python3-yaml libmysqlclient-dev
 
 pip install pipenv
 ```
@@ -47,6 +47,9 @@ python manage.py runscript mktoday
 ```
 #### Set from signs.xml
 download signs.xml from SCALE website then run:
+
+https://www.socallinuxexpo.org/scale/22x/sign.xml
+
 ```bash
 python manage.py runscript import_signxml
 ```

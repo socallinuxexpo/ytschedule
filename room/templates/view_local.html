@@ -78,7 +78,7 @@ div.time {width: 100%; text-align: center; font-size: xx-large; z-index: 10;
     @media (min-width: 60em) {
         --wrapper: 60em;
         --gutter: 20px;
-        --noOfColumns: 4;
+        --noOfColumns: 3;
         --ratioA: 16;
         --ratioB: 9;
     }
@@ -132,28 +132,36 @@ div.time {width: 100%; text-align: center; font-size: xx-large; z-index: 10;
     background-size: 100%;
 }
 
+.roomview {
+    border: 5;
+    border-color: green;
+}
+
 </style>
 </head>
 
 <body>
 {% verbatim %}
 <div data-ng-controller="clock" class="time">{{ atTime.toTimeString() }}</div>
+<br>
 <div class="grid">
-<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
-<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
-<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div class="roomview"><img src="http://ballroom-a/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://ballroom-b/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://ballroom-c/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
 
-<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
-<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
-<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://ballroom-de/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://ballroom-f/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://ballroom-g/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
 
-<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
-<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
-<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://ballroom-h/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://room-101/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://room-103/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
 
-<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
-<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
-<div><img src="http://10.0.5.23/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://room-105/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://room-106/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+<div><img src="http://room-107/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
+
+<div><img src="http://room-211/mjpeg/mjpeg_stream" height="100%" width="100%"></div>
 </div>
 {% endverbatim %}
 </body>

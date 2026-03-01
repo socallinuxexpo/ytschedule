@@ -1,42 +1,42 @@
 #!/usr/bin/python
 
-import time,datetime
-import pytz
-import iso8601
-from xml.etree.ElementTree import Element, SubElement, dump, parse, tostring, fromstring
-import os, sys
-import django
-from daemon import Daemon
-
-rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
-
-path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
-sys.path.append(path)
-os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings.production"
-
+# import time,datetime
+# import pytz
+# import iso8601
+# from xml.etree.ElementTree import Element, SubElement, dump, parse, tostring, fromstring
+# import os, sys
+# import django
+# from daemon import Daemon
+from room.models import *
+import time
 
 TIME_ZONE ='America/Los_Angeles'
-from room.models import *
-
 tz = pytz.timezone(TIME_ZONE)
+
+# rundir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../run'))
+
+# path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+# sys.path.append(path)
+# os.environ["DJANGO_SETTINGS_MODULE"] = "ytschedule.settings.production"
+
+
+# TIME_ZONE ='America/Los_Angeles'
+# from room.models import *
+
+# tz = pytz.timezone(TIME_ZONE)
 time.tzset()
 os.environ['TZ'] = 'America/Los_Angeles'
-if __name__ == "__main__":
-  django.setup()
-  logger = logging.getLogger()
-  logger.setLevel(logging.DEBUG)
 
-  ch = logging.StreamHandler(sys.stdout)
-  ch.setLevel(logging.DEBUG)
-  formatter = logging.Formatter('%(levelname)s - %(message)s')
-  ch.setFormatter(formatter)
-  logger.addHandler(ch)
+def run(*args):
+  tz = pytz.timezone(TIME_ZONE)
+  time.tzset()
+  os.environ['TZ'] = 'America/Los_Angeles'
 
   for room in Room.objects.all():
     print(room.title)
     print(YouTube.lt(room.start_time))
     talks = Talk.objects.filter(room=room).filter(start_time__gte=room.start_time).filter(end_time__lte=room.end_time)
-    desc = "<p><a href=\"https://www.socallinuxexpo.org/scale/14x\">SCaLE 16x</a> - the 16th annual <a href=\"https://www.socallinuxexpo.org/\">Southern California Linux Expo</a> - the first-of-the-year Linux/Open Source software expo in North America, SCaLE 14X expects to host 150 exhibitors this year, along with nearly 130 sessions, tutorials and special events</p><p>SCaLE is the largest community-run open-source and free software conference in North America. It is held annually in Los Angeles.</p>\n"
+    desc = "<p><a href=\"https://www.socallinuxexpo.org/scale/20x\">SCaLE 20x</a> - the 20th <a href=\"https://www.socallinuxexpo.org/\">Southern California Linux Expo</a> - the first-of-the-year Linux/Open Source software expo in North America, SCaLE 20X expects to host 150 exhibitors this year, along with nearly 170 sessions, tutorials and special events</p><p>SCaLE is the largest community-run open-source and free software conference in North America. It is held annually in Los Angeles area.</p>\n"
     print(len(talks))
     for talk in talks:
       diff=(talk.start_time-room.start_time).seconds

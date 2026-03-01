@@ -10,6 +10,7 @@ import pytz
 import wakeonlan as wol
 from django_fsm import FSMField, transition
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 # from apiclient.discovery import build
 # from apiclient.errors import HttpError
@@ -135,6 +136,25 @@ class YouTube(object):
         results = []
         for stream in response.get("items", []):
             results.append({
+                'id': stream["id"],
+                'name': stream["snippet"]["title"],
+                'status': stream["status"]["streamStatus"],
+                'health': stream["status"]["healthStatus"]['status']
+            })
+            # results.sort()
+        return results
+
+    @staticmethod
+    def list_stream_debug():
+        logger.info("---------------Calling YouTube---------------")
+        response = YouTube.get_authenticated_service().liveStreams().list(
+            part="id,snippet,status",
+            mine=True,
+            maxResults=50).execute()
+        results = []
+        for stream in response.get("items", []):
+            print(stream["snippet"])
+            results.append({
                 'name': stream["snippet"]["title"],
                 'status': stream["status"]["streamStatus"],
                 'health': stream["status"]["healthStatus"]['status']
@@ -173,6 +193,7 @@ class YouTube(object):
             id=broadcast.broadcast_id).execute()['items'][0]
         video['status']['license'] = 'creativeCommon'
         video['status']['embeddable'] = True
+        video['status']['selfDeclaredMadeForKids'] = False
         video['snippet']['categoryId'] = 28
         video['snippet']['defaultLanguage'] = 'en'
 
@@ -216,15 +237,24 @@ class YouTube(object):
 
     @staticmethod
     def find_stream_by_title(title):
-        streams = YouTube.list_streams()
-        count = 0
-        for stream in streams:
+        logger.info("---------------Calling YouTube---------------")
+        respose = YouTube.get_authenticated_service().liveStreams().list(
+            part="id,snippet,cdn,status",
+            mine=True,
+            maxResults=50).execute()
+        # streams = YouTube.list_streams()
+        # count = 0
+        found = None
+        for stream in respose.get("items", []):
+            print(stream['snippet'])
             if stream['snippet']['title'] == title:
+                found = stream
                 break
-            count += 1
-        if count < len(streams):
-            return stream
-        return None
+            # count += 1
+        # if count < len(streams):
+        #     return stream
+        # return None
+        return found
 
     @staticmethod
     def runcmd(command):
@@ -275,9 +305,9 @@ class Room(models.Model):
          'after': 'after_state'}
     ]
     formats = (("1080p", "1080p"),
-               ("1080p_hfr", "1080p_hfr"),
+               ("1440p", "1440p"),
+               ("2160p", "2160p"),
                ("720p", "720p"),
-               ("720_hfr", "720p_hfr"),
                ("480p", "480p"),
                ("360p", "360p"),
                ("240p", "240p"))
@@ -290,7 +320,7 @@ class Room(models.Model):
     state = FSMField(default='planned')
     pub_date = models.DateTimeField(
         'date published',
-        default=datetime.datetime.now,
+        default=timezone.now,
         blank=True)
 
     broadcast_id = models.CharField(max_length=64, default="", blank=True)
@@ -310,6 +340,9 @@ class Room(models.Model):
     mac_address = models.CharField(max_length=64, default="", blank=True)
     is_dual_stream = models.BooleanField(default=False)
     save_camera = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['start_time', 'name']
 
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)
@@ -342,6 +375,8 @@ class Room(models.Model):
                 target='published', conditions=[can_publish])
     def publish(self, privacy="unlisted"):
         logger.debug("Creating Live Broadcast for Room %s" % self.title)
+        if( not self.description ):
+            self.update_description2()
         try:
             youtube = YouTube.get_authenticated_service()
             insert_broadcast_response = youtube.liveBroadcasts().insert(
@@ -455,8 +490,9 @@ class Room(models.Model):
         if check:
             stream = YouTube.find_stream_by_title(
                 "%s_%s" % (self.dnsname(), self.cdn_format))
-
+        logger.debug("after check")
         if stream is None:
+            logger.debug("creating stream")
             try:
                 youtube = YouTube.get_authenticated_service()
                 stream = youtube.liveStreams().insert(
@@ -467,8 +503,9 @@ class Room(models.Model):
                             description=self.title
                         ),
                         cdn=dict(
-                            format=self.cdn_format,
-                            ingestionType="rtmp"
+                            ingestionType="rtmp",
+                            resolution=self.cdn_format,
+                            frameRate="30fps"
                         )
                     )
                 ).execute()
@@ -581,9 +618,6 @@ class Room(models.Model):
     def update_description(self):
         talks = Talk.objects.filter(room=self)
         desc = ""
-        # desc = "SCaLE is the largest community-run open-source and free " \
-        #        "software conference in North America. It is held annually in" \
-        #        " Los Angeles.\n"
         for talk in talks:
             diff = (talk.start_time-self.start_time).seconds
             diff += 300
@@ -602,8 +636,7 @@ class Room(models.Model):
                             YouTube.lt(talk.start_time).strftime('%I:%M %p'),
                             YouTube.lt(talk.end_time).strftime('%I:%M %p %Z'),
                             talk.talk_url, talk.title)
-        # desc += "Southern Californa Linux Expo: " \
-        #         "https://www.socallinuxexpo.org/scale/16x\n"
+        
         self.description = desc
         self.save()
 
@@ -654,7 +687,7 @@ class Talk(models.Model):
     end_time = models.DateTimeField('end time')
     pub_date = models.DateTimeField(
         'date published',
-        default=datetime.datetime.now(),
+        default=timezone.now,
         blank=True)
     broadcast_id = models.CharField(max_length=64, default="", blank=True)
     streamable = models.BooleanField(default=True)
@@ -664,6 +697,9 @@ class Talk(models.Model):
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        ordering = ['title']
 
     def clean(self):
         # start before end

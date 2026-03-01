@@ -2,11 +2,12 @@ from django.conf.urls import url, include
 
 from . import views
 from tastypie.api import Api
-from .api import RoomResource, StreamResource
+from .api import RoomResource, StreamResource, TalkResource
 
 v1_api = Api(api_name='v1')
 v1_api.register(RoomResource())
 v1_api.register(StreamResource())
+v1_api.register(TalkResource())
 
 urlpatterns = [
     # ex: /

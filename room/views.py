@@ -17,4 +17,9 @@ def view(request):
     context = { }
     return HttpResponse(template.render(context, request))
 
+def operate(request):
+    template = loader.get_template('operate.html')
+    context = { }
+    return HttpResponse(template.render(context, request))
+
 

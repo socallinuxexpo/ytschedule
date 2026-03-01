@@ -40,7 +40,7 @@ def run(*args):
   if len(args) > 0:
     xml_filename = args[0]
   else:
-    xml_filename = "example_data/sign.xml"
+    xml_filename = "sign.xml"
 
   if len(args) > 1:
     base_url = args[1]
@@ -62,7 +62,7 @@ def run(*args):
     start_time = iso8601.parse_date(time_parse.start_text)
     end_time = iso8601.parse_date(time_parse.end_text)
     roomname = node.findtext("Room")
-    comp = "%s %s"%(roomname,start_time.strftime('%A %b. %d - SCaLE 18x'))
+    comp = "%s %s"%(roomname,start_time.strftime('%A %b. %d - SCaLE 22x'))
 
     q = Room.objects.filter(title=comp)
     if len(q) == 0:

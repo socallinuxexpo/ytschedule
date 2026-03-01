@@ -11,7 +11,7 @@ def run(*args):
     os.environ['TZ'] = 'America/Los_Angeles'
 
     rooms = []
-    print(args[0])
+    # print(args[0])
     if len(args) >= 1:
         if args[0].lower() == "all":
             rooms = Room.objects.all()
@@ -22,7 +22,7 @@ def run(*args):
     privacy = "private"
 
     for room in rooms:
-        print("[%i]%s -- %s" % (room.id, room.title, room.state))
+        print("[%i]%s -- \n\n%s\n\n" % (room.id, room.state, room.title))
         # room.create_stream()
         # print("Room {} Stream Created.".format(room.id))
         # room.publish(privacy)()

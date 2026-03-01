@@ -1,4 +1,5 @@
 from room.models import *
+logging.basicConfig(level=logging.DEBUG)
 
 def run(*args):
 
@@ -12,7 +13,8 @@ def run(*args):
   else:
     status = 'all'
 
-  print(YouTube.list_stream_health())
+  pprint.pp(YouTube.list_stream_health())
+  # print(YouTube.list_stream_debug())
 
   #results = YouTube.list_broadcast(status)
   #print "Showing %s of %s results." % (len(results['items']), results['pageInfo']['totalResults'])

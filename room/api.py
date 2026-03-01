@@ -1,7 +1,7 @@
 from tastypie.resources import Resource, ModelResource, Bundle
 from tastypie.cache import SimpleCache
 from tastypie import fields
-from .models import Room, YouTube
+from .models import Room, YouTube, Talk
 
 class RoomResource(ModelResource):
   class Meta:
@@ -56,3 +56,16 @@ class StreamResource(Resource):
 
     def obj_get_list(self, bundle, **kwargs):
       return self.get_object_list(bundle.request)
+
+
+class TalkResource(Resource):
+  class Meta:
+    queryset = Talk.objects.all()
+    resource_name = 'talk'
+    allowed_methods = ['get']
+    always_return_data = True
+    filtering = {
+      'start_time': ["exact", "lt", "lte", "gte", "gt"],
+      'end_time': ["exact", "lt", "lte", "gte", "gt"],
+    }
+    cache = SimpleCache(timeout=10)
