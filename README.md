@@ -45,13 +45,13 @@ Use fake data or signs method.
 ```bash
 python manage.py runscript mktoday
 ```
-#### Set from signs.xml
-download signs.xml from SCALE website then run:
+#### Set from signs
+download signs from SCALE website then run:
 
-https://www.socallinuxexpo.org/scale/22x/sign.xml
+https://www.socallinuxexpo.org/scale/23x/signs
 
 ```bash
-python manage.py runscript import_signxml
+python manage.py runscript import_signjson
 ```
 
 # Try the admin interface
