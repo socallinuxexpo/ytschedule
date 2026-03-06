@@ -12,6 +12,7 @@ v1_api.register(TalkResource())
 urlpatterns = [
     # ex: /
     url(r'^view/', views.view),
+    url(r'^operate/', views.operate),
     url(r'^$', views.index),
     url(r'^$', views.index, name='all'),
     url(r'^$', views.index, name='upcomming'),

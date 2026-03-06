@@ -38,13 +38,20 @@ def run(*args):
   rooms = {}
   with open(source_filename, 'r') as file:
     data = json.load(file)
-
-  print( len(data) )
+  talks = {'total': len(data), 'talk': 0, 'expo': 0, 'bof': 0, 'other': 0, 'errors': 0}
+  # print( len(data) )
   for entry in data:
     try:
-      # pprint.pp(entry)
-      if entry['Location'] == "Expo" or entry['Topic'] == "BoFs" or entry['Location'].strip == '':
+      if entry['Location'] == '':
+        # pprint.pp(entry)
+        print("Unused Entry(blank, location, [%s])"%entry['Name'])
+        talks['other']+=1
+      elif entry['Location'] == "Expo":
         print("Unused Entry(%s)"%entry['Name'])
+        talks['expo']+=1
+      elif entry['Topic'] == "BoFs":
+        print("Unused Entry(%s)"%entry['Name'])
+        talks['bof']+=1
       else:
         start_time = iso8601.parse_date(entry['StartTime'])
         end_time = iso8601.parse_date(entry['EndTime'])
@@ -91,13 +98,21 @@ def run(*args):
             rooms[comp]["end"] = end_time
         else:
           rooms[comp] = {"start": start_time, "end": end_time}
+        talks['talk']+=1
     except Exception as e:
       print("Had error(%s) with: "%e)
-      pprint.pp(entry)
+      talks['errors']+=1
   print("Updating Rooms: ")
   for room in rooms:
-    print("{}: {} <--> {}".format(room, rooms[room]["start"], rooms[room]["end"]))
+    # print("{}:\t {}\t <-->\t {}".format(room, rooms[room]["start"], rooms[room]["end"]))
     room_obj = Room.objects.filter(title=room)[0]
     room_obj.start_time=rooms[room]["start"]
     room_obj.end_time=rooms[room]["end"]
     room_obj.save()
+    print("{name:15} {day:10} {start:8} <--> {end:8}".format(name=room_obj.name, day=room_obj.start_time.strftime('%A'), start=room_obj.start_time.strftime('%I:%M %p'), end=room_obj.end_time.strftime('%I:%M %p') ))
+  print(talks)
+  # print( "[%s] == [%s]"%(talks['total'], (talks['talk'] + talks['expo'] + talks['bof'] + talks['other']) ) )
+  if(talks['total'] == (talks['talk'] + talks['expo'] + talks['bof'] + talks['other']) ):
+    exit(0)
+  else:
+    exit(-2)

@@ -641,11 +641,9 @@ class Room(models.Model):
         self.save()
 
     def update_description2(self):
-        talks = Talk.objects.filter(room=self)
+        talks = Talk.objects.filter(room=self).order_by('start_time')
         desc = ""
-        # desc = "SCaLE is the largest community-run open-source and free " \
-        #        "software conference in North America. It is held annually in" \
-        #        " Los Angeles.\n"
+        
         for talk in talks:
             diff = (talk.start_time-self.start_time).seconds
             diff += 300
@@ -664,8 +662,6 @@ class Room(models.Model):
                             YouTube.lt(talk.start_time).strftime('%I:%M %p'),
                             YouTube.lt(talk.end_time).strftime('%I:%M %p %Z'),
                             talk.title, talk.talk_url)
-        # desc += "Southern Californa Linux Expo: " \
-        #         "https://www.socallinuxexpo.org/scale/16x\n"
         self.description = desc
         self.save()
 

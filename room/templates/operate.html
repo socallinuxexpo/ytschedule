@@ -18,7 +18,7 @@ streamPoll.controller('MainCtrl', ["Restangular","$scope","$timeout",function(Re
         $timeout(function() {
             $scope.loads++;
             $scope.atTime = new Date();
-            var resource = Restangular.all('api/v1/stream/');
+            var resource = Restangular.all('api/v1/upcoming/');
             resource.getList().then(function(streams){
               $scope.streams = streams.objects;
             });
